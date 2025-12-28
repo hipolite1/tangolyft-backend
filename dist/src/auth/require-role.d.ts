@@ -1,0 +1,1 @@
+export declare function RequireRole(...roles: Array<"RIDER" | "DRIVER" | "ADMIN">): <TFunction extends Function, Y>(target: TFunction | object, propertyKey?: string | symbol, descriptor?: TypedPropertyDescriptor<Y>) => void;
