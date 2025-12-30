@@ -66,7 +66,7 @@ export class TripsController {
 
     const trip = await this.prisma.trip.create({
       data,
-      include: { delivery: true, rider: true, driver: true },
+      include: { rider: true, driver: true },
     });
 
     return { ok: true, trip };
@@ -79,7 +79,7 @@ export class TripsController {
     const trips = await this.prisma.trip.findMany({
       where: { riderId: user.sub },
       orderBy: { requestedAt: "desc" },
-      include: { delivery: true, driver: true },
+      include: { driver: true },
     });
     return { ok: true, trips };
   }
@@ -102,7 +102,7 @@ export class TripsController {
         city: driver.city,
       },
       orderBy: { requestedAt: "asc" },
-      include: { delivery: true, rider: true },
+      include: { rider: true },
     });
 
     // Filter by serviceType vs driverType
@@ -138,7 +138,7 @@ export class TripsController {
         matchedAt: new Date(),
         acceptedAt: new Date(),
       },
-      include: { delivery: true, rider: true, driver: true },
+      include: { rider: true, driver: true },
     });
 
     return { ok: true, trip: updated };
