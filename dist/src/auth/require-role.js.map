@@ -1,1 +1,0 @@
-{"version":3,"file":"require-role.js","sourceRoot":"","sources":["../../../src/auth/require-role.ts"],"names":[],"mappings":";;AAIA,kCAEC;AAND,2CAA4D;AAC5D,6CAAyC;AACzC,+CAA2C;AAE3C,SAAgB,WAAW,CAAC,GAAG,KAA0C;IACvE,OAAO,IAAA,wBAAe,EAAC,IAAA,kBAAS,EAAC,sBAAS,EAAE,IAAI,wBAAU,CAAC,KAAK,CAAC,CAAC,CAAC,CAAC;AACtE,CAAC"}
