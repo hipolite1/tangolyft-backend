@@ -1,6 +1,8 @@
 import { Body, Controller, Get, Param, Post } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { RequireRole } from "../auth/require-role";
+import { CommitmentStatus } from "@prisma/client";
+import { CurrentUser } from "../auth/current-user.decorator";
 
 @Controller("admin")
 export class AdminController {
@@ -17,7 +19,25 @@ export class AdminController {
 
     return { ok: true, drivers };
   }
+  @RequireRole("ADMIN")
+@Post("trips/:tripId/waive-commitment")
+async waiveCommitment(
+  @Param("tripId") tripId: string,
+  @CurrentUser() user: any,
+  @Body() body: { reason?: string },
+) {
+  const updated = await this.prisma.trip.update({
+    where: { id: tripId },
+    data: {
+      commitmentStatus: CommitmentStatus.WAIVED,
+      commitmentWaivedAt: new Date(),
+      commitmentWaivedBy: user.sub,
+      commitmentReason: body?.reason ?? "Waived by admin",
+    },
+  });
 
+  return { ok: true, trip: updated };
+}
   @RequireRole("ADMIN")
   @Post("drivers/:driverId/approve")
   async approve(@Param("driverId") driverId: string) {
