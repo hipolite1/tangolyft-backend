@@ -95,15 +95,17 @@ export class TripsController {
     if (driver.kycStatus !== "APPROVED") return { ok: false, message: "KYC not approved" };
     if (driver.availability !== "ONLINE") return { ok: false, message: "Driver is not ONLINE" };
 
-    const trips = await this.prisma.trip.findMany({
-      where: {
-        status: TripStatus.REQUESTED,
-        driverId: null,
-        city: driver.city,
-      },
-      orderBy: { requestedAt: "asc" },
-      include: { rider: true },
-    });
+  const trips = await this.prisma.trip.findMany({
+  where: {
+    status: TripStatus.REQUESTED,
+    driverId: null,
+    city: driver.city,
+    commitmentStatus: { in: ["CONFIRMED", "WAIVED"] },
+  },
+  orderBy: { requestedAt: "asc" },
+  include: { rider: true },
+});
+
 
     // Filter by serviceType vs driverType
     const filtered = trips.filter((t) => serviceTypeMatchesDriver(driver.driverType as any, t.serviceType));
