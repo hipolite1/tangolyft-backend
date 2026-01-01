@@ -53,7 +53,7 @@ export class AuthService {
       ok: true,
       phone,
       expiresInMinutes: this.otpExpiresMinutes(),
-
+      buildStamp: "b437ea4-otp-debug-v1",
       // TEMP: helps confirm Render env var is applied (remove later)
       debugOtpRaw,
       debugOtp,
