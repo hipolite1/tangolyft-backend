@@ -32,36 +32,33 @@ export class AuthService {
   }
 
   async requestOtp(rawPhone: string) {
-  const phone = normalizePhone(rawPhone);
+    const phone = normalizePhone(rawPhone);
 
-  const otp = this.otpDevMode()
-    ? "123456"
-    : String(Math.floor(100000 + Math.random() * 900000));
+    const otp = this.otpDevMode()
+      ? "123456"
+      : String(Math.floor(100000 + Math.random() * 900000));
 
-  const otpHash = await bcrypt.hash(otp, 10);
-  const expiresAt = new Date(Date.now() + this.otpExpiresMinutes() * 60_000);
+    const otpHash = await bcrypt.hash(otp, 10);
+    const expiresAt = new Date(Date.now() + this.otpExpiresMinutes() * 60_000);
 
-  await this.prisma.otpSession.create({
-    data: { phone, otpHash, expiresAt },
-  });
+    await this.prisma.otpSession.create({
+      data: { phone, otpHash, expiresAt },
+    });
 
-  // ✅ Debug OTP (ONLY when enabled on Render)
-  const debugOtp = process.env.DEBUG_OTP === "true";
-
-  return {
-    ok: true,
-    phone,
-    expiresInMinutes: this.otpExpiresMinutes(),
-    ...(debugOtp ? { otp } : {}),
-  };
-}
-
+    // DEBUG_OTP toggle (Render env var)
+    const debugOtpRaw = process.env.DEBUG_OTP; // TEMP visibility
+    const debugOtp = (debugOtpRaw || "").toLowerCase() === "true";
 
     return {
       ok: true,
       phone,
       expiresInMinutes: this.otpExpiresMinutes(),
-      ...(this.otpDevMode() ? { devOtp: otp } : {}),
+
+      // TEMP: helps confirm Render env var is applied (remove later)
+      debugOtpRaw,
+      debugOtp,
+
+      ...(debugOtp ? { otp } : {}),
     };
   }
 
