@@ -151,7 +151,6 @@ model Trip {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Payment / commitment
   paymentMode        PaymentMode      @default(PAY_ON_DROPOFF)
   commitmentStatus   CommitmentStatus @default(PENDING)
   commitmentAmount   Int?
@@ -159,11 +158,8 @@ model Trip {
   commitmentWaivedBy String?
   commitmentReason   String?
 
-  // Relations
-  payment Payment?
-  fare    TripFare?
-
-  // ✅ Fix for your 500: allow prisma.trip.create({ data: { delivery: { create: ... }}})
+  payment  Payment?
+  fare     TripFare?
   delivery TripDelivery?
 
   driver Driver? @relation("DriverTrips", fields: [driverId], references: [id])
