@@ -7,21 +7,21 @@ datasource db {
 }
 
 model User {
-  id         String     @id @default(uuid())
-  phone      String     @unique
-  role       Role
-  status     UserStatus @default(ACTIVE)
-  fullName   String?
-  email      String?
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id        String     @id @default(uuid())
+  phone     String     @unique
+  role      Role
+  status    UserStatus @default(ACTIVE)
+  fullName  String?
+  email     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
   adminLogs  AuditLog[] @relation("AdminLogs")
   driver     Driver?
   riderTrips Trip[]     @relation("RiderTrips")
-  // ...existing fields
 
-  isMerchant       Boolean  @default(false)
-  merchantTrusted  Boolean  @default(false)
+  isMerchant      Boolean @default(false)
+  merchantTrusted Boolean @default(false)
 }
 
 model OtpSession {
@@ -39,24 +39,25 @@ model OtpSession {
 }
 
 model Driver {
-  id           String           @id @default(uuid())
-  userId       String           @unique
+  id           String       @id @default(uuid())
+  userId       String       @unique
   driverType   DriverType
-  kycStatus    KycStatus        @default(PENDING)
-  availability Availability     @default(OFFLINE)
-  city         City             @default(ABUJA)
+  kycStatus    KycStatus    @default(PENDING)
+  availability Availability @default(OFFLINE)
+  city         City         @default(ABUJA)
   approvedAt   DateTime?
   rejectedAt   DateTime?
   kycNote      String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  user         User             @relation(fields: [userId], references: [id])
-  documents    DriverDocument[]
-  location     DriverLocation?
-  wallet       DriverWallet?
-  payouts      Payout[]
-  trips        Trip[]           @relation("DriverTrips")
-  vehicle      Vehicle?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  user      User             @relation(fields: [userId], references: [id])
+  documents DriverDocument[]
+  location  DriverLocation?
+  wallet    DriverWallet?
+  payouts   Payout[]
+  trips     Trip[]           @relation("DriverTrips")
+  vehicle   Vehicle?
 }
 
 model Vehicle {
@@ -69,7 +70,8 @@ model Vehicle {
   year        Int?
   plateNumber String?
   createdAt   DateTime    @default(now())
-  driver      Driver      @relation(fields: [driverId], references: [id])
+
+  driver Driver @relation(fields: [driverId], references: [id])
 }
 
 model DriverDocument {
@@ -81,7 +83,8 @@ model DriverDocument {
   reviewNote String?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
-  driver     Driver    @relation(fields: [driverId], references: [id])
+
+  driver Driver @relation(fields: [driverId], references: [id])
 
   @@index([driverId, docType])
 }
@@ -93,7 +96,8 @@ model DriverLocation {
   heading    Int?
   accuracyM  Float?
   lastSeenAt DateTime @default(now())
-  driver     Driver   @relation(fields: [driverId], references: [id])
+
+  driver Driver @relation(fields: [driverId], references: [id])
 
   @@index([lastSeenAt])
 }
@@ -113,57 +117,80 @@ model FarePolicy {
 
   @@unique([city, serviceType, isActive])
 }
+
 model Trip {
-  id             String          @id @default(uuid())
-  serviceType    ServiceType
-  city           City            @default(ABUJA)
-  riderId        String
-  driverId       String?
-  status         TripStatus      @default(REQUESTED)
-  cancelledBy    CancelledBy?
-  cancelReason   String?
+  id          String      @id @default(uuid())
+  serviceType ServiceType
+  city        City        @default(ABUJA)
+
+  riderId  String
+  driverId String?
+
+  status       TripStatus   @default(REQUESTED)
+  cancelledBy  CancelledBy?
+  cancelReason String?
+
   pickupAddress  String
   pickupLat      Float
   pickupLng      Float
   dropoffAddress String
   dropoffLat     Float
   dropoffLng     Float
+
   distanceKmEst  Float?
   durationMinEst Float?
-  requestedAt    DateTime        @default(now())
-  matchedAt      DateTime?
-  acceptedAt     DateTime?
-  arrivedAt      DateTime?
-  startedAt      DateTime?
-  completedAt    DateTime?
-  cancelledAt    DateTime?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  payment        Payment?
-  driver         Driver?         @relation("DriverTrips", fields: [driverId], references: [id])
-  rider          User            @relation("RiderTrips", fields: [riderId], references: [id])
-  fare           TripFare?
+
+  requestedAt DateTime  @default(now())
+  matchedAt   DateTime?
+  acceptedAt  DateTime?
+  arrivedAt   DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  cancelledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Payment / commitment
+  paymentMode        PaymentMode      @default(PAY_ON_DROPOFF)
+  commitmentStatus   CommitmentStatus @default(PENDING)
+  commitmentAmount   Int?
+  commitmentWaivedAt DateTime?
+  commitmentWaivedBy String?
+  commitmentReason   String?
+
+  // Relations
+  payment Payment?
+  fare    TripFare?
+
+  // ✅ Fix for your 500: allow prisma.trip.create({ data: { delivery: { create: ... }}})
+  delivery TripDelivery?
+
+  driver Driver? @relation("DriverTrips", fields: [driverId], references: [id])
+  rider  User    @relation("RiderTrips", fields: [riderId], references: [id])
+
   @@index([status, serviceType, city])
   @@index([riderId, requestedAt])
   @@index([driverId, status])
-    paymentMode         PaymentMode      @default(PAY_ON_DROPOFF)
-  commitmentStatus    CommitmentStatus @default(PENDING)
-  commitmentAmount    Int?
-  commitmentWaivedAt  DateTime?
-  commitmentWaivedBy  String?
-  commitmentReason    String?
-
-}
-enum CommitmentStatus {
-  PENDING
-  CONFIRMED
-  WAIVED
 }
 
-enum PaymentMode {
-  PAY_ON_DROPOFF
-  PREPAID
+model TripDelivery {
+  id     String @id @default(uuid())
+  tripId String @unique
+
+  itemDescription String
+  recipientName   String
+  recipientPhone  String
+  noteToCourier   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
 }
+
 model TripFare {
   tripId          String   @id
   currency        Currency @default(NGN)
@@ -178,24 +205,26 @@ model TripFare {
   distanceKm      Float?
   durationMin     Float?
   createdAt       DateTime @default(now())
-  trip            Trip     @relation(fields: [tripId], references: [id])
+
+  trip Trip @relation(fields: [tripId], references: [id])
 }
 
 model Payment {
-  id               String                 @id @default(uuid())
-  tripId           String                 @unique
-  provider         PaymentProvider        @default(PAYSTACK)
-  method           PaymentMethod          @default(TRANSFER)
-  status           PaymentStatus          @default(PENDING)
+  id               String          @id @default(uuid())
+  tripId           String          @unique
+  provider         PaymentProvider @default(PAYSTACK)
+  method           PaymentMethod   @default(TRANSFER)
+  status           PaymentStatus   @default(PENDING)
   amount           Int
-  currency         Currency               @default(NGN)
-  reference        String                 @unique
+  currency         Currency        @default(NGN)
+  reference        String          @unique
   authorizationUrl String?
   verifiedAt       DateTime?
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
-  trip             Trip                   @relation(fields: [tripId], references: [id])
-  webhookEvents    PaystackWebhookEvent[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  trip          Trip                   @relation(fields: [tripId], references: [id])
+  webhookEvents PaystackWebhookEvent[]
 }
 
 model PaystackWebhookEvent {
@@ -206,17 +235,19 @@ model PaystackWebhookEvent {
   reference  String?
   payload    Json
   receivedAt DateTime          @default(now())
-  payment    Payment?          @relation(fields: [paymentId], references: [id])
+
+  payment Payment? @relation(fields: [paymentId], references: [id])
 
   @@index([reference])
 }
 
 model DriverWallet {
-  driverId  String              @id
-  balance   Int                 @default(0)
-  updatedAt DateTime            @updatedAt
-  driver    Driver              @relation(fields: [driverId], references: [id])
-  txs       WalletTransaction[]
+  driverId  String   @id
+  balance   Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  driver Driver              @relation(fields: [driverId], references: [id])
+  txs    WalletTransaction[]
 }
 
 model WalletTransaction {
@@ -228,7 +259,8 @@ model WalletTransaction {
   amount    Int
   note      String?
   createdAt DateTime       @default(now())
-  wallet    DriverWallet   @relation(fields: [driverId], references: [driverId])
+
+  wallet DriverWallet @relation(fields: [driverId], references: [driverId])
 
   @@index([driverId, createdAt])
 }
@@ -242,7 +274,8 @@ model Payout {
   paystackTransferRef String?
   createdAt           DateTime       @default(now())
   paidAt              DateTime?
-  driver              Driver         @relation(fields: [driverId], references: [id])
+
+  driver Driver @relation(fields: [driverId], references: [id])
 
   @@index([driverId, schedule, status])
 }
@@ -255,9 +288,21 @@ model AuditLog {
   entityId    String
   metadata    Json?
   createdAt   DateTime @default(now())
-  admin       User     @relation("AdminLogs", fields: [adminUserId], references: [id])
+
+  admin User @relation("AdminLogs", fields: [adminUserId], references: [id])
 
   @@index([adminUserId, createdAt])
+}
+
+enum CommitmentStatus {
+  PENDING
+  CONFIRMED
+  WAIVED
+}
+
+enum PaymentMode {
+  PAY_ON_DROPOFF
+  PREPAID
 }
 
 enum Role {
