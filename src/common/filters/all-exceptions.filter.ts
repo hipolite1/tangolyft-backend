@@ -19,7 +19,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    // Logs the real cause of 500 (Prisma errors, stack trace, etc.)
     console.error('[EXCEPTION]', {
       method: req.method,
       url: req.originalUrl,
@@ -37,3 +36,4 @@ export class AllExceptionsFilter implements ExceptionFilter {
     res.status(status).json(payload);
   }
 }
+
