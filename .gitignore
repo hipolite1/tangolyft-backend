@@ -4,3 +4,6 @@ node_modules
 dist
 *.tsbuildinfo
 /generated/prisma
+
+# Local generated env/scripts
+/tangolyft_env.sh
