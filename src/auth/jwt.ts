@@ -1,16 +1,15 @@
-import * as jwt from "jsonwebtoken";
+import jwt, { Secret, SignOptions } from "jsonwebtoken";
 
-export type JwtPayload = {
-  sub: string;
-  role: "RIDER" | "DRIVER" | "ADMIN";
-  iat?: number;
-  exp?: number;
-};
+const JWT_SECRET: Secret = process.env.JWT_SECRET ?? "dev_secret_change_me";
+const DEFAULT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN ?? "7d") as SignOptions["expiresIn"];
 
-export function verifyJwtToken(token: string): JwtPayload {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) throw new Error("JWT_SECRET missing in .env");
+export function signJwt(
+  payload: Record<string, any>,
+  expiresIn: SignOptions["expiresIn"] = DEFAULT_EXPIRES_IN,
+) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
+}
 
-  const payload = jwt.verify(token, secret);
-  return payload as JwtPayload;
+export function verifyJwt<T = any>(token: string): T {
+  return jwt.verify(token, JWT_SECRET) as T;
 }

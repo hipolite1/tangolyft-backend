@@ -151,8 +151,10 @@ model Trip {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  paymentMode        PaymentMode      @default(PAY_ON_DROPOFF)
-  commitmentStatus   CommitmentStatus @default(PENDING)
+  paymentMode PaymentMode @default(PAY_ON_DROPOFF)
+
+  // ✅ MVP default so PAY_ON_DROPOFF does not require Admin Waive
+  commitmentStatus   CommitmentStatus @default(WAIVED)
   commitmentAmount   Int?
   commitmentWaivedAt DateTime?
   commitmentWaivedBy String?
@@ -291,9 +293,12 @@ model AuditLog {
 }
 
 enum CommitmentStatus {
+  NOT_REQUIRED
   PENDING
   CONFIRMED
   WAIVED
+  APPROVED
+  FAILED
 }
 
 enum PaymentMode {
