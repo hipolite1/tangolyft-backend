@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { HealthModule } from "./health/health.module";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { PrismaModule } from "./prisma/prisma.module";
@@ -17,6 +18,7 @@ import { PaymentsModule } from "./payments/payments.module";
       isGlobal: true,
       envFilePath: ".env",
     }),
+    HealthModule,
     PrismaModule,
     AuthModule,
     DriverModule,
@@ -24,9 +26,10 @@ import { PaymentsModule } from "./payments/payments.module";
     TripsModule,
     WalletModule,
     PaymentsModule,
-],
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
+
 
