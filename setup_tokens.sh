@@ -72,6 +72,26 @@ echo
 RIDER_JWT="$(login_with_debug_otp "$RIDER_PHONE" "RIDER")"
 ADMIN_JWT="$(login_with_debug_otp "$ADMIN_PHONE" "ADMIN (must be role ADMIN in DB)")"
 DRIVER_JWT="$(login_with_debug_otp "$DRIVER_PHONE" "DRIVER (must be role DRIVER in DB)")"
+# Force-clean: keep only the JWT (3-part token)
+RIDER_JWT="$(printf '%s' "$RIDER_JWT" | tr -d '\r' | grep -oE '[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+' | head -n 1)"
+ADMIN_JWT="$(printf '%s' "$ADMIN_JWT" | tr -d '\r' | grep -oE '[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+' | head -n 1)"
+DRIVER_JWT="$(printf '%s' "$DRIVER_JWT" | tr -d '\r' | grep -oE '[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+' | head -n 1)"
+
+if [[ -z "$RIDER_JWT" || -z "$ADMIN_JWT" || -z "$DRIVER_JWT" ]]; then
+  echo "ERROR: Failed to extract one or more JWTs" >&2
+  exit 1
+fi
+
+# Force-clean: keep only the JWT (3-part token)
+RIDER_JWT="$(printf '%s' "$RIDER_JWT" | tr -d '\r' | grep -oE '[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+' | head -n 1)"
+ADMIN_JWT="$(printf '%s' "$ADMIN_JWT" | tr -d '\r' | grep -oE '[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+' | head -n 1)"
+DRIVER_JWT="$(printf '%s' "$DRIVER_JWT" | tr -d '\r' | grep -oE '[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+' | head -n 1)"
+
+if [[ -z "$RIDER_JWT" || -z "$ADMIN_JWT" || -z "$DRIVER_JWT" ]]; then
+  echo "ERROR: Failed to extract one or more JWTs" >&2
+  exit 1
+fi
+
 
 export RIDER_TOKEN="Bearer $RIDER_JWT"
 export ADMIN_TOKEN="Bearer $ADMIN_JWT"
