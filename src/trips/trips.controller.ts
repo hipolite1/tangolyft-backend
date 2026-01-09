@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, ParseUUIDPipe } from "@nestjs/common";
-import { Prisma, ServiceType, TripStatus } from "@prisma/client";
+import { CommitmentStatus, Prisma, ServiceType, TripStatus } from "@prisma/client";
 import { RequireRole } from "../auth/require-role";
 import { CurrentUser } from "../auth/current-user.decorator";
 import { PrismaService } from "../prisma/prisma.service";
@@ -50,12 +50,14 @@ export class TripsController {
         dropoffLat: dto.dropoffLat,
         dropoffLng: dto.dropoffLng,
 
-        // optional; complete() will fallback if missing
+        // optional estimates (complete() will fallback if missing)
         distanceKmEst: dto.distanceKmEst ?? null,
         durationMinEst: dto.durationMinEst ?? null,
 
         status: TripStatus.REQUESTED,
-        // paymentMode is NOT read from DTO (Prisma default = PAY_ON_DROPOFF)
+
+        // MVP: do not block the flow with commitment
+        commitmentStatus: CommitmentStatus.WAIVED,
       };
 
       if (dto.serviceType === ServiceType.BIKE_DELIVERY) {
@@ -135,7 +137,7 @@ export class TripsController {
     }
   }
 
-  // Driver accepts a trip (atomic: no double-accept)
+  // Driver accepts a trip (atomic claim in a transaction)
   @RequireRole("DRIVER", "ADMIN")
   @Post(":tripId/accept")
   async accept(@CurrentUser() user: any, @Param("tripId", new ParseUUIDPipe()) tripId: string) {
@@ -146,19 +148,6 @@ export class TripsController {
       if (driver.kycStatus !== "APPROVED") return { ok: false, message: "KYC not approved" };
       if (driver.availability !== "ONLINE") return { ok: false, message: "Driver is not ONLINE" };
 
-      // Atomic claim: only succeeds if still REQUESTED + unassigned
-      const updated = await this.prisma.trip
-        .update({
-          where: {
-            // requires a compound unique in schema to be perfect;
-            // so we do the atomic claim inside tx (below) instead.
-            id: tripId,
-          },
-          data: {},
-        })
-        .catch(() => null);
-
-      // Use transaction for safe claim
       const result = await this.prisma.$transaction(async (tx) => {
         const trip = await tx.trip.findUnique({ where: { id: tripId } });
         if (!trip) return { ok: false as const, message: "Trip not found" };
@@ -175,7 +164,6 @@ export class TripsController {
           return { ok: false as const, message: "Service type does not match driver type" };
         }
 
-        // this update will throw if someone changed it between read/update
         const claimed = await tx.trip.update({
           where: { id: tripId },
           data: {
@@ -189,9 +177,6 @@ export class TripsController {
 
         return { ok: true as const, trip: claimed };
       });
-
-      // keep TS happy (and ignore unused var)
-      void updated;
 
       return result;
     } catch (e) {
@@ -242,6 +227,7 @@ export class TripsController {
 
       if (trip.driverId !== driver.id) return { ok: false, message: "Not assigned to this driver" };
 
+      // Fast idempotent return
       if (trip.status === TripStatus.COMPLETED) {
         const existingFare = await this.prisma.tripFare.findUnique({ where: { tripId } });
         return { ok: true, trip, fare: existingFare, walletUpdated: false, alreadyCompleted: true };
@@ -255,6 +241,7 @@ export class TripsController {
       let distanceKmEst = Number(rawDistance);
       let durationMinEst = Number(rawDuration);
 
+      // MVP fallback: never crash fare calc
       if (!Number.isFinite(distanceKmEst) || distanceKmEst <= 0) distanceKmEst = 1;
       if (!Number.isFinite(durationMinEst) || durationMinEst <= 0) durationMinEst = 5;
 
@@ -271,6 +258,11 @@ export class TripsController {
           throw new Error("Trip must be STARTED first");
         }
 
+        // IMPORTANT: still ensure assignment in-tx (race-safe)
+        if (latest.driverId !== driver.id) {
+          throw new Error("Not assigned to this driver");
+        }
+
         const completedTrip = await tx.trip.update({
           where: { id: tripId },
           data: {
@@ -281,6 +273,7 @@ export class TripsController {
           },
         });
 
+        // If fare already exists, return it (idempotency)
         const existingFare = await tx.tripFare.findUnique({ where: { tripId } });
         if (existingFare) {
           return { trip: completedTrip, fare: existingFare, walletUpdated: false, alreadyCompleted: true };
@@ -311,6 +304,7 @@ export class TripsController {
           },
         });
 
+        // Prevent double-credit
         const existingTx = await tx.walletTransaction.findFirst({
           where: { tripId, driverId: driver.id, type: "CREDIT", reason: "TRIP_EARNING" },
         });
@@ -343,7 +337,7 @@ export class TripsController {
           walletUpdated = true;
         }
 
-        // optional audit log (if AuditLog exists in schema)
+        // Optional audit log (if AuditLog model exists)
         await tx.auditLog
           .create({
             data: {
@@ -373,7 +367,3 @@ export class TripsController {
     }
   }
 }
-
-
-
-     
