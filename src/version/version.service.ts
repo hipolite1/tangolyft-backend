@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 @Injectable()
 export class VersionService {
-  get() {
+  getVersion() {
     const commit =
       process.env.RENDER_GIT_COMMIT ||
       process.env.COMMIT_SHA ||
@@ -17,4 +17,5 @@ export class VersionService {
     };
   }
 }
+
 

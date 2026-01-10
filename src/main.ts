@@ -8,10 +8,9 @@ import compression from "compression";
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Render/Cloudflare proxy
- const http = app.getHttpAdapter().getInstance();
- http.set("trust proxy", 1);
-
+  // Render/Cloudflare proxy (Express)
+  const server: any = app.getHttpAdapter().getInstance();
+  server.set("trust proxy", 1);
 
   // Security headers
   app.use(helmet());

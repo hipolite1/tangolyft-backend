@@ -3,11 +3,11 @@ import { VersionService } from "./version.service";
 
 @Controller("version")
 export class VersionController {
-  constructor(private readonly versionService: VersionService) {}
+  constructor(private readonly version: VersionService) {}
 
   @Get()
   getVersion() {
-    return this.versionService.get();
+    return this.version.getVersion();
   }
 }
 
