@@ -7,3 +7,5 @@ dist
 
 # Local generated env/scripts
 /tangolyft_env.sh
+tangolyft_env.sh
+.env
