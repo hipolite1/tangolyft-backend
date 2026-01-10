@@ -11,7 +11,8 @@ import { AdminModule } from "./admin/admin.module";
 import { TripsModule } from "./trips/trips.module";
 import { WalletModule } from "./wallet/wallet.module";
 import { PaymentsModule } from "./payments/payments.module";
-
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
+import { APP_GUARD } from "@nestjs/core";
 import { HealthModule } from "./health/health.module";
 import { VersionModule } from "./version/version.module";
 
@@ -21,6 +22,11 @@ import { VersionModule } from "./version/version.module";
       isGlobal: true,
       envFilePath: ".env",
     }),
+
+    ThrottlerModule.forRoot([
+      { ttl: 60, limit: 120 },
+    ]),
+
     HealthModule,
     VersionModule,
     PrismaModule,
@@ -32,9 +38,13 @@ import { VersionModule } from "./version/version.module";
     PaymentsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}
+
 
 
 
