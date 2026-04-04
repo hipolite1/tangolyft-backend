@@ -1,44 +1,50 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
-import { City, ServiceType } from "@prisma/client";
+import { ServiceType } from "@prisma/client";
+import {
+  IsEnum,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsPhoneNumber,
+  IsString,
+  Min,
+} from "class-validator";
 
 export class RequestTripDto {
   @IsEnum(ServiceType)
-  serviceType!: ServiceType;
+  serviceType: ServiceType;
 
   @IsOptional()
-  @IsEnum(City)
-  city?: City;
+  @IsString()
+  city?: string;
 
   @IsString()
-  @IsNotEmpty()
-  pickupAddress!: string;
+  pickupAddress: string;
 
   @IsNumber()
-  pickupLat!: number;
+  pickupLat: number;
 
   @IsNumber()
-  pickupLng!: number;
+  pickupLng: number;
 
   @IsString()
-  @IsNotEmpty()
-  dropoffAddress!: string;
+  dropoffAddress: string;
 
   @IsNumber()
-  dropoffLat!: number;
+  dropoffLat: number;
 
   @IsNumber()
-  dropoffLng!: number;
+  dropoffLng: number;
 
-  // optional estimates (can be added later)
   @IsOptional()
   @IsNumber()
+  @Min(0)
   distanceKmEst?: number;
 
   @IsOptional()
-  @IsNumber()
+  @IsInt()
+  @Min(0)
   durationMinEst?: number;
 
-  // Delivery-only fields (optional; used when serviceType is DELIVERY)
   @IsOptional()
   @IsString()
   itemDescription?: string;
@@ -48,7 +54,7 @@ export class RequestTripDto {
   recipientName?: string;
 
   @IsOptional()
-  @IsString()
+  @IsPhoneNumber("NG")
   recipientPhone?: string;
 
   @IsOptional()

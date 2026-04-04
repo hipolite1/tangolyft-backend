@@ -1,7 +1,8 @@
-import { Body, Controller, Post } from "@nestjs/common";
+import { Body, Controller, Patch, Post } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { RequireRole } from "../auth/require-role";
 import { CurrentUser } from "../auth/current-user.decorator";
+import { UpdateLocationDto } from "./dto/update-location.dto";
 
 @Controller("driver")
 export class DriverController {
@@ -12,9 +13,16 @@ export class DriverController {
   @Post("apply")
   async apply(@CurrentUser() user: any, @Body() body: any) {
     const driverType = body?.driverType; // "CAR_DRIVER" or "BIKE_COURIER"
-    if (!driverType) return { ok: false, message: "driverType is required: CAR_DRIVER or BIKE_COURIER" };
+    if (!driverType) {
+      return {
+        ok: false,
+        message: "driverType is required: CAR_DRIVER or BIKE_COURIER",
+      };
+    }
 
-    const existing = await this.prisma.driver.findUnique({ where: { userId: user.sub } });
+    const existing = await this.prisma.driver.findUnique({
+      where: { userId: user.sub },
+    });
     if (existing) return { ok: true, driver: existing };
 
     const driver = await this.prisma.driver.create({
@@ -41,10 +49,16 @@ export class DriverController {
   @Post("documents")
   async addDoc(@CurrentUser() user: any, @Body() body: any) {
     const { docType, fileUrl } = body || {};
-    if (!docType || !fileUrl) return { ok: false, message: "docType and fileUrl are required" };
+    if (!docType || !fileUrl) {
+      return { ok: false, message: "docType and fileUrl are required" };
+    }
 
-    const driver = await this.prisma.driver.findUnique({ where: { userId: user.sub } });
-    if (!driver) return { ok: false, message: "Driver profile not found. Apply first." };
+    const driver = await this.prisma.driver.findUnique({
+      where: { userId: user.sub },
+    });
+    if (!driver) {
+      return { ok: false, message: "Driver profile not found. Apply first." };
+    }
 
     const doc = await this.prisma.driverDocument.create({
       data: {
@@ -62,7 +76,9 @@ export class DriverController {
   @RequireRole("DRIVER", "ADMIN")
   @Post("go-online")
   async goOnline(@CurrentUser() user: any) {
-    const driver = await this.prisma.driver.findUnique({ where: { userId: user.sub } });
+    const driver = await this.prisma.driver.findUnique({
+      where: { userId: user.sub },
+    });
     if (!driver) return { ok: false, message: "Driver profile not found" };
 
     if (driver.kycStatus !== "APPROVED") {
@@ -80,7 +96,9 @@ export class DriverController {
   @RequireRole("DRIVER", "ADMIN")
   @Post("go-offline")
   async goOffline(@CurrentUser() user: any) {
-    const driver = await this.prisma.driver.findUnique({ where: { userId: user.sub } });
+    const driver = await this.prisma.driver.findUnique({
+      where: { userId: user.sub },
+    });
     if (!driver) return { ok: false, message: "Driver profile not found" };
 
     const updated = await this.prisma.driver.update({
@@ -89,5 +107,54 @@ export class DriverController {
     });
 
     return { ok: true, driver: updated };
+  }
+
+  // Update live driver location
+  @RequireRole("DRIVER", "ADMIN")
+  @Patch("location")
+  async updateLocation(
+    @CurrentUser() user: any,
+    @Body() body: UpdateLocationDto,
+  ) {
+    const driver = await this.prisma.driver.findUnique({
+      where: { userId: user.sub },
+      include: { location: true },
+    });
+
+    if (!driver) {
+      return { ok: false, message: "Driver profile not found" };
+    }
+
+    if (driver.kycStatus !== "APPROVED") {
+      return { ok: false, message: "Only approved drivers can update location" };
+    }
+
+    if (driver.location) {
+      const location = await this.prisma.driverLocation.update({
+        where: { driverId: driver.id },
+        data: {
+          lat: body.lat,
+          lng: body.lng,
+          heading: body.heading ?? null,
+          accuracyM: body.accuracyM ?? null,
+          lastSeenAt: new Date(),
+        },
+      });
+
+      return { ok: true, location };
+    }
+
+    const location = await this.prisma.driverLocation.create({
+      data: {
+        driverId: driver.id,
+        lat: body.lat,
+        lng: body.lng,
+        heading: body.heading ?? null,
+        accuracyM: body.accuracyM ?? null,
+        lastSeenAt: new Date(),
+      },
+    });
+
+    return { ok: true, location };
   }
 }

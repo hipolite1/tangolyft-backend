@@ -5,29 +5,21 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  private static pool: Pool;
+  private readonly pool: Pool;
 
   constructor() {
-    // Create ONE shared pool for the whole app (important)
-    if (!PrismaService.pool) {
-      const url = process.env.DATABASE_URL;
+    const connectionString = process.env.DATABASE_URL;
 
-      if (!url) {
-        throw new Error("DATABASE_URL is missing. Check your .env file in the project root.");
-      }
-
-      PrismaService.pool = new Pool({
-        connectionString: url,
-        // Neon requires SSL; pg will respect sslmode=require in your URL,
-        // but this makes it explicit and avoids common local issues.
-        ssl: { rejectUnauthorized: false },
-      });
+    if (!connectionString) {
+      throw new Error("DATABASE_URL is missing. Check your .env file in the project root.");
     }
 
-    const adapter = new PrismaPg(PrismaService.pool);
+    const pool = new Pool({ connectionString });
+    const adapter = new PrismaPg(pool);
 
-    // Prisma 7: pass adapter at runtime
     super({ adapter });
+
+    this.pool = pool;
   }
 
   async onModuleInit() {
@@ -36,9 +28,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   async onModuleDestroy() {
     await this.$disconnect();
-    // Do NOT end the pool here in dev; it breaks hot reload.
+    await this.pool.end();
   }
 }
-
-
 

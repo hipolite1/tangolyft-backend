@@ -14,7 +14,9 @@ import { DriverModule } from "./driver/driver.module";
 import { AdminModule } from "./admin/admin.module";
 import { TripsModule } from "./trips/trips.module";
 import { WalletModule } from "./wallet/wallet.module";
+
 import { PaymentsModule } from "./payments/payments.module";
+import { WebhooksModule } from "./webhooks/webhooks.module";
 
 import { ThrottlerProxyGuard } from "./auth/throttler-proxy.guard";
 
@@ -52,12 +54,16 @@ import { ThrottlerProxyGuard } from "./auth/throttler-proxy.guard";
     AdminModule,
     TripsModule,
     WalletModule,
+
+    // Payments + provider webhooks
     PaymentsModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerProxyGuard }, AppService],
 })
 export class AppModule {}
+
 
 
 

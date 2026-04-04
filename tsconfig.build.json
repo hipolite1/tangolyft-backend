@@ -1,11 +1,21 @@
 {
   "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./runtime",
+    "declaration": false,
+    "incremental": false
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
   "exclude": [
     "node_modules",
-    "test",
     "dist",
+    "build",
+    "runtime",
+    "test",
     "**/*spec.ts",
-    "prisma/seed.ts"
+    "prisma/seed.ts",
+    "prisma.config.ts"
   ]
 }
-

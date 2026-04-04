@@ -44,6 +44,7 @@ model Driver {
   driverType   DriverType
   kycStatus    KycStatus    @default(PENDING)
   availability Availability @default(OFFLINE)
+  isBusy       Boolean      @default(false)
   city         City         @default(ABUJA)
   approvedAt   DateTime?
   rejectedAt   DateTime?
@@ -126,7 +127,7 @@ model Trip {
   riderId  String
   driverId String?
 
-  status       TripStatus   @default(REQUESTED)
+  status       TripStatus  @default(REQUESTED)
   cancelledBy  CancelledBy?
   cancelReason String?
 
@@ -153,7 +154,7 @@ model Trip {
 
   paymentMode PaymentMode @default(PAY_ON_DROPOFF)
 
-  // ✅ MVP default so PAY_ON_DROPOFF does not require Admin Waive
+  // MVP default so PAY_ON_DROPOFF does not require Admin Waive
   commitmentStatus   CommitmentStatus @default(WAIVED)
   commitmentAmount   Int?
   commitmentWaivedAt DateTime?
@@ -301,6 +302,13 @@ enum CommitmentStatus {
   FAILED
 }
 
+enum Availability {
+  OFFLINE
+  ONLINE
+  ON_TRIP
+  SUSPENDED
+}
+
 enum PaymentMode {
   PAY_ON_DROPOFF
   PREPAID
@@ -332,12 +340,6 @@ enum KycStatus {
   IN_REVIEW
   APPROVED
   REJECTED
-}
-
-enum Availability {
-  OFFLINE
-  ONLINE
-  ON_TRIP
 }
 
 enum City {
