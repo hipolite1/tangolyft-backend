@@ -6,13 +6,13 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate deploy",
-    "build": "npm run prisma:generate && npx nest build",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
-    "start:prod": "node runtime/main.js"
-  },
+  "prisma:generate": "prisma generate",
+  "prisma:migrate": "prisma migrate deploy",
+  "build": "npm run prisma:generate && npx nest build",
+  "start": "nest start",
+  "start:dev": "nest start --watch",
+  "start:prod": "node runtime/main.js"
+},
   "dependencies": {
     "@nestjs/cli": "^11.0.0",
     "@nestjs/common": "^11.0.1",
