@@ -372,4 +372,165 @@ export class TripsService {
       return { ok: false, message: prismaErrMessage(e) };
     }
   }
+
+  async accept(user: any, tripId: string) {
+    try {
+      const driver = await this.prisma.driver.findUnique({
+        where: { userId: user.sub },
+      });
+
+      if (!driver) {
+        return { ok: false, message: "Driver profile not found" };
+      }
+
+      if (driver.kycStatus !== "APPROVED") {
+        return { ok: false, message: "KYC not approved" };
+      }
+
+      if (driver.availability !== "ONLINE") {
+        return { ok: false, message: "Driver is not ONLINE" };
+      }
+
+      const trip = await this.prisma.trip.findUnique({
+        where: { id: tripId },
+        include: { rider: true, delivery: true, fare: true },
+      });
+
+      if (!trip) {
+        return { ok: false, message: "Trip not found" };
+      }
+
+      if (trip.status !== TripStatus.REQUESTED) {
+        return { ok: false, message: "Trip is not REQUESTED" };
+      }
+
+      if (trip.driverId) {
+        return { ok: false, message: "Trip has already been accepted" };
+      }
+
+      if (trip.city !== driver.city) {
+        return { ok: false, message: "Trip city does not match driver city" };
+      }
+
+      if (!serviceTypeMatchesDriver(driver.driverType as any, trip.serviceType)) {
+        return { ok: false, message: "Trip serviceType does not match driver type" };
+      }
+
+      const now = new Date();
+
+      const updated = await this.prisma.trip.update({
+        where: { id: tripId },
+        data: {
+          driverId: driver.id,
+          status: TripStatus.ACCEPTED,
+          matchedAt: now,
+          acceptedAt: now,
+        },
+        include: {
+          rider: true,
+          driver: true,
+          delivery: true,
+          fare: true,
+        },
+      });
+
+      return { ok: true, trip: updated };
+    } catch (e) {
+      return { ok: false, message: prismaErrMessage(e) };
+    }
+  }
+
+  async start(user: any, tripId: string) {
+    try {
+      const driver = await this.prisma.driver.findUnique({
+        where: { userId: user.sub },
+      });
+
+      if (!driver) {
+        return { ok: false, message: "Driver profile not found" };
+      }
+
+      const trip = await this.prisma.trip.findUnique({
+        where: { id: tripId },
+        include: { rider: true, driver: true, delivery: true, fare: true },
+      });
+
+      if (!trip) {
+        return { ok: false, message: "Trip not found" };
+      }
+
+      if (trip.driverId !== driver.id) {
+        return { ok: false, message: "This trip is not assigned to this driver" };
+      }
+
+      if (trip.status !== TripStatus.ACCEPTED) {
+        return { ok: false, message: "Trip must be ACCEPTED before START" };
+      }
+
+      const updated = await this.prisma.trip.update({
+        where: { id: tripId },
+        data: {
+          status: TripStatus.STARTED,
+          startedAt: new Date(),
+        },
+        include: {
+          rider: true,
+          driver: true,
+          delivery: true,
+          fare: true,
+        },
+      });
+
+      return { ok: true, trip: updated };
+    } catch (e) {
+      return { ok: false, message: prismaErrMessage(e) };
+    }
+  }
+
+  async complete(user: any, tripId: string) {
+    try {
+      const driver = await this.prisma.driver.findUnique({
+        where: { userId: user.sub },
+      });
+
+      if (!driver) {
+        return { ok: false, message: "Driver profile not found" };
+      }
+
+      const trip = await this.prisma.trip.findUnique({
+        where: { id: tripId },
+        include: { rider: true, driver: true, delivery: true, fare: true },
+      });
+
+      if (!trip) {
+        return { ok: false, message: "Trip not found" };
+      }
+
+      if (trip.driverId !== driver.id) {
+        return { ok: false, message: "This trip is not assigned to this driver" };
+      }
+
+      if (trip.status !== TripStatus.STARTED) {
+        return { ok: false, message: "Trip must be STARTED before COMPLETE" };
+      }
+
+      const updated = await this.prisma.trip.update({
+        where: { id: tripId },
+        data: {
+          status: TripStatus.COMPLETED,
+          completedAt: new Date(),
+        },
+        include: {
+          rider: true,
+          driver: true,
+          delivery: true,
+          fare: true,
+        },
+      });
+
+      return { ok: true, trip: updated };
+    } catch (e) {
+      return { ok: false, message: prismaErrMessage(e) };
+    }
+  }
 }
