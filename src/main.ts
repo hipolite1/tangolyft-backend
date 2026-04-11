@@ -43,7 +43,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
-
+  console.log("CORS_PRELIGHT_FIX_V2_LIVE");
   await app.listen(process.env.PORT || 3000);
 }
 bootstrap();
