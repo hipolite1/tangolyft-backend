@@ -9,7 +9,41 @@ import express from "express";
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // ✅ Capture RAW body for webhook signature verification
+  const allowedOrigins = new Set([
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "http://127.0.0.1:5501",
+    "http://localhost:5501",
+    "http://127.0.0.1:5502",
+    "http://localhost:5502",
+    "http://127.0.0.1:5503",
+    "http://localhost:5503",
+  ]);
+
+  app.use((req: any, res: any, next: any) => {
+    const origin = req.headers.origin as string | undefined;
+
+    if (origin && allowedOrigins.has(origin)) {
+      res.header("Access-Control-Allow-Origin", origin);
+      res.header("Vary", "Origin");
+    }
+
+    res.header(
+      "Access-Control-Allow-Methods",
+      "GET,POST,PATCH,PUT,DELETE,OPTIONS",
+    );
+    res.header(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization",
+    );
+
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(204);
+    }
+
+    next();
+  });
+
   app.use(
     express.json({
       verify: (req: any, _res, buf) => {
@@ -17,6 +51,7 @@ async function bootstrap() {
       },
     }),
   );
+
   app.use(
     express.urlencoded({
       extended: true,
@@ -26,16 +61,10 @@ async function bootstrap() {
     }),
   );
 
-  // Render/Cloudflare proxy (so req.ip uses X-Forwarded-For properly)
   app.set("trust proxy", 1);
-
-  // Security headers
   app.use(helmet());
-
-  // Gzip compression
   app.use(compression());
 
-  // Strong request validation
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -43,14 +72,12 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
   console.log("CORS_PRELIGHT_FIX_V2_LIVE");
+
   await app.listen(process.env.PORT || 3000);
 }
 bootstrap();
-
-
-
-
 
 
 
