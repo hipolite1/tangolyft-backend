@@ -20,6 +20,16 @@ export class AdminService {
     return { ok: true, drivers };
   }
 
+  async approvedDrivers() {
+    const drivers = await this.prisma.driver.findMany({
+      where: { kycStatus: "APPROVED" },
+      include: { user: true, documents: true, vehicle: true },
+      orderBy: { approvedAt: "desc" },
+    });
+
+    return { ok: true, drivers };
+  }
+
   async waiveCommitment(
     tripId: string,
     user: any,
