@@ -28,14 +28,8 @@ async function bootstrap() {
       res.header("Vary", "Origin");
     }
 
-    res.header(
-      "Access-Control-Allow-Methods",
-      "GET,POST,PATCH,PUT,DELETE,OPTIONS",
-    );
-    res.header(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization",
-    );
+    res.header("Access-Control-Allow-Methods", "GET,POST,PATCH,PUT,DELETE,OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
     if (req.method === "OPTIONS") {
       return res.sendStatus(204);
@@ -73,7 +67,7 @@ async function bootstrap() {
     }),
   );
 
-  console.log("CORS_PRELIGHT_FIX_V2_LIVE");
+  console.log("ADMIN_CORS_FIX_LIVE");
 
   await app.listen(process.env.PORT || 3000);
 }
