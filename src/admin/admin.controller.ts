@@ -20,6 +20,12 @@ export class AdminController {
   }
 
   @RequireRole("ADMIN")
+  @Get("drivers/approved")
+  async approvedDrivers() {
+    return this.adminService.approvedDrivers();
+  }
+
+  @RequireRole("ADMIN")
   @Post("trips/:tripId/waive-commitment")
   async waiveCommitment(
     @Param("tripId") tripId: string,
