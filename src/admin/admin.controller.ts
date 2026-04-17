@@ -26,6 +26,12 @@ export class AdminController {
   }
 
   @RequireRole("ADMIN")
+  @Get("trips")
+  async trips() {
+    return this.adminService.listTrips();
+  }
+
+  @RequireRole("ADMIN")
   @Post("trips/:tripId/waive-commitment")
   async waiveCommitment(
     @Param("tripId") tripId: string,
