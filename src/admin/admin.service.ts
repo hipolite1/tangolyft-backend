@@ -49,6 +49,32 @@ export class AdminService {
     return { ok: true, trips };
   }
 
+  async getTripDetail(tripId: string) {
+    if (!tripId || tripId.length < 10) {
+      throw new BadRequestException("Invalid tripId");
+    }
+
+    const trip = await this.prisma.trip.findUnique({
+      where: { id: tripId },
+      include: {
+        rider: true,
+        driver: {
+          include: {
+            user: true,
+          },
+        },
+        delivery: true,
+        fare: true,
+      },
+    });
+
+    if (!trip) {
+      throw new NotFoundException(`Trip not found: ${tripId}`);
+    }
+
+    return { ok: true, trip };
+  }
+
   async waiveCommitment(
     tripId: string,
     user: any,
