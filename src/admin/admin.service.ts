@@ -30,6 +30,25 @@ export class AdminService {
     return { ok: true, drivers };
   }
 
+  async listTrips() {
+    const trips = await this.prisma.trip.findMany({
+      include: {
+        rider: true,
+        driver: {
+          include: {
+            user: true,
+          },
+        },
+        delivery: true,
+        fare: true,
+      },
+      orderBy: { requestedAt: "desc" },
+      take: 100,
+    });
+
+    return { ok: true, trips };
+  }
+
   async waiveCommitment(
     tripId: string,
     user: any,
