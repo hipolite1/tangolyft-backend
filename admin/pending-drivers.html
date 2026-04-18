@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TangoLyft Admin - Pending Drivers</title>
+  <link rel="stylesheet" href="./admin.css" />
+</head>
+<body data-page="pending-drivers">
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>TangoLyft Admin</h2>
+      <nav>
+  <a class="nav-link active" href="./pending-drivers.html">Pending Drivers</a>
+  <a class="nav-link" href="./approved-drivers.html">Approved Drivers</a>
+  <a class="nav-link" href="./trips.html">Trips</a>
+</nav>
+      <button id="logoutBtn" class="btn danger full">Logout</button>
+    </aside>
+
+    <main class="content">
+      <div class="topbar">
+        <div>
+          <h1>Pending Drivers</h1>
+          <p class="muted">Approve or reject new driver applications</p>
+        </div>
+        <button id="refreshBtn" class="btn primary">Refresh</button>
+      </div>
+
+      <div id="status" class="status"></div>
+
+      <div class="card">
+        <div id="emptyState" class="empty-state" style="display:none;">
+          No pending drivers.
+        </div>
+
+        <div class="table-wrap">
+          <table id="driversTable">
+            <thead>
+              <tr>
+                <th>Driver ID</th>
+                <th>Phone</th>
+                <th>City</th>
+                <th>Driver Type</th>
+                <th>KYC</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="driversTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="./admin.js"></script>
+</body>
+</html>

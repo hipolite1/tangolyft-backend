@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TangoLyft Admin - Trip Detail</title>
+  <link rel="stylesheet" href="./admin.css" />
+</head>
+<body data-page="trip-detail">
+  <div class="admin-layout">
+    <aside class="sidebar">
+      <div class="brand">TangoLyft Admin</div>
+      <nav class="nav">
+        <a href="./pending-drivers.html">Pending Drivers</a>
+        <a href="./approved-drivers.html">Approved Drivers</a>
+        <a href="./trips.html" class="active">Trips</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <div class="page-header">
+        <h1>Trip Detail</h1>
+        <div class="row gap">
+          <button id="backBtn" class="btn">Back to Trips</button>
+          <button id="refreshBtn" class="btn">Refresh</button>
+          <button id="logoutBtn" class="btn danger">Logout</button>
+        </div>
+      </div>
+
+      <div id="status" class="status info"></div>
+
+      <div class="card">
+        <table class="table">
+          <tbody>
+            <tr><th>Trip ID</th><td id="tripId">-</td></tr>
+            <tr><th>Rider Phone</th><td id="riderPhone">-</td></tr>
+            <tr><th>Driver</th><td id="driverLabel">-</td></tr>
+            <tr><th>City</th><td id="city">-</td></tr>
+            <tr><th>Service Type</th><td id="serviceType">-</td></tr>
+            <tr><th>Status</th><td id="statusValue">-</td></tr>
+            <tr><th>Commitment Status</th><td id="commitmentStatus">-</td></tr>
+            <tr><th>Commitment Reason</th><td id="commitmentReason">-</td></tr>
+            <tr><th>Pickup Lat</th><td id="pickupLat">-</td></tr>
+            <tr><th>Pickup Lng</th><td id="pickupLng">-</td></tr>
+            <tr><th>Dropoff Lat</th><td id="dropoffLat">-</td></tr>
+            <tr><th>Dropoff Lng</th><td id="dropoffLng">-</td></tr>
+            <tr><th>Fare</th><td id="fareAmount">-</td></tr>
+            <tr><th>Requested At</th><td id="requestedAt">-</td></tr>
+            <tr><th>Accepted At</th><td id="acceptedAt">-</td></tr>
+            <tr><th>Started At</th><td id="startedAt">-</td></tr>
+            <tr><th>Completed At</th><td id="completedAt">-</td></tr>
+            <tr><th>Cancelled At</th><td id="cancelledAt">-</td></tr>
+            <tr><th>Commitment Waived At</th><td id="commitmentWaivedAt">-</td></tr>
+            <tr><th>Waived By</th><td id="waivedBy">-</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script src="./admin.js"></script>
+</body>
+</html>
