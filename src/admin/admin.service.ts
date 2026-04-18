@@ -118,7 +118,10 @@ export class AdminService {
 
       return { ok: true, trip: updated };
     } catch (e: any) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === "P2025"
+      ) {
         throw new NotFoundException(`Trip not found: ${tripId}`);
       }
       throw e;
@@ -262,7 +265,9 @@ export class AdminService {
     }
 
     if (exists.kycStatus !== "APPROVED") {
-      throw new BadRequestException("Only APPROVED drivers can be unsuspended");
+      throw new BadRequestException(
+        "Only APPROVED drivers can be unsuspended",
+      );
     }
 
     const driver = await this.prisma.driver.update({
