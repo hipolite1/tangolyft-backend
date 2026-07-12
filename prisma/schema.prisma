@@ -411,6 +411,7 @@ enum PaystackEventType {
 enum PayoutSchedule {
   DAILY
   WEEKLY
+  MANUAL_REQUEST
 }
 
 enum PayoutStatus {
