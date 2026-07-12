@@ -22,33 +22,43 @@ let DriverController = class DriverController {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async apply(user, body) {
-        const driverType = body?.driverType;
-        if (!driverType) {
+    async apply(body) {
+        const { fullName, phone, email, city, vehicleType, } = body || {};
+        if (!fullName || !phone || !city || !vehicleType) {
             return {
                 ok: false,
-                message: "driverType is required: CAR_DRIVER or BIKE_COURIER",
+                message: "fullName, phone, city and vehicleType are required",
             };
         }
-        const existing = await this.prisma.driver.findUnique({
-            where: { userId: user.sub },
+        const existingUser = await this.prisma.user.findUnique({
+            where: { phone },
         });
-        if (existing)
-            return { ok: true, driver: existing };
-        const driver = await this.prisma.driver.create({
+        if (existingUser) {
+            return {
+                ok: false,
+                message: "Phone number already exists",
+            };
+        }
+        const user = await this.prisma.user.create({
             data: {
-                userId: user.sub,
-                driverType,
-                kycStatus: "PENDING",
-                availability: "OFFLINE",
-                city: "ABUJA",
+                phone,
+                role: "DRIVER",
             },
         });
-        await this.prisma.user.update({
-            where: { id: user.sub },
-            data: { role: "DRIVER" },
+        const driver = await this.prisma.driver.create({
+            data: {
+                userId: user.id,
+                driverType: vehicleType,
+                kycStatus: "PENDING",
+                availability: "OFFLINE",
+                city,
+            },
         });
-        return { ok: true, driver };
+        return {
+            ok: true,
+            message: "Driver application submitted successfully",
+            driver,
+        };
     }
     async addDoc(user, body) {
         const { docType, fileUrl } = body || {};
@@ -137,12 +147,10 @@ let DriverController = class DriverController {
 };
 exports.DriverController = DriverController;
 __decorate([
-    (0, require_role_1.RequireRole)("RIDER", "DRIVER", "ADMIN"),
     (0, common_1.Post)("apply"),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
-    __param(1, (0, common_1.Body)()),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], DriverController.prototype, "apply", null);
 __decorate([

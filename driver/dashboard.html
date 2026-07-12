@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Driver Dashboard - TangoLyft</title>
+  <link rel="stylesheet" href="./driver.css" />
+</head>
+<body>
+
+  <div class="container">
+    <div class="card">
+
+      <h1>Driver Dashboard</h1>
+      <p class="subtitle">Manage your availability and trips</p>
+
+      <div id="message"></div>
+
+      <div class="form-group">
+        <label>Status</label>
+        <div id="driverStatus">
+          OFFLINE
+        </div>
+      </div>
+
+      <button id="goOnlineBtn" class="btn-primary">
+        Go Online
+      </button>
+
+      <button
+        id="goOfflineBtn"
+        class="btn-primary"
+        style="margin-top:12px;background:#d33;"
+      >
+        Go Offline
+      </button>
+
+      <hr style="margin:30px 0;" />
+
+      <h2>Assigned Trip</h2>
+
+      <div id="tripCard">
+        No active trip assigned.
+      </div>
+
+    </div>
+  </div>
+
+  <script src="./driver.js"></script>
+</body>
+</html>

@@ -100,21 +100,27 @@ export class AdminService {
           commitmentStatus: CommitmentStatus.WAIVED,
           commitmentWaivedAt: new Date(),
           commitmentWaivedBy: user.sub,
-          commitmentReason: (body?.reason?.trim() || "Waived by admin").slice(0, 300),
+          commitmentReason: (
+            body?.reason?.trim() || "Waived by admin"
+          ).slice(0, 300),
         },
       });
 
-      await this.prisma.auditLog.create({
-        data: {
-          adminUserId: user.sub,
-          action: "TRIP_COMMITMENT_WAIVED",
-          entityType: "Trip",
-          entityId: tripId,
-          metadata: {
-            reason: (body?.reason?.trim() || "Waived by admin").slice(0, 300),
+      await this.prisma.auditLog
+        .create({
+          data: {
+            adminUserId: user.sub,
+            action: "TRIP_COMMITMENT_WAIVED",
+            entityType: "Trip",
+            entityId: tripId,
+            metadata: {
+              reason: (
+                body?.reason?.trim() || "Waived by admin"
+              ).slice(0, 300),
+            },
           },
-        },
-      }).catch(() => null);
+        })
+        .catch(() => null);
 
       return { ok: true, trip: updated };
     } catch (e: any) {
@@ -124,8 +130,140 @@ export class AdminService {
       ) {
         throw new NotFoundException(`Trip not found: ${tripId}`);
       }
+
       throw e;
     }
+  }
+
+  async cancelTrip(tripId: string, reason: string, adminId?: string) {
+    const trip = await this.prisma.trip.findUnique({
+      where: { id: tripId },
+    });
+
+    if (!trip) {
+      throw new NotFoundException("Trip not found");
+    }
+
+    if (trip.status === "COMPLETED") {
+      throw new BadRequestException("Cannot cancel a completed trip");
+    }
+
+    if (trip.status === "CANCELLED") {
+      return { ok: true, message: "Trip already cancelled" };
+    }
+
+    const updated = await this.prisma.trip.update({
+      where: { id: tripId },
+      data: {
+        status: "CANCELLED",
+        cancelledAt: new Date(),
+        cancelReason: reason,
+        cancelledBy: "ADMIN",
+      },
+    });
+
+    return { ok: true, trip: updated };
+  }
+
+ async assignDriver(tripId: string, driverPhone: string) {
+  if (!tripId || tripId.length < 10) {
+    throw new BadRequestException("Invalid tripId");
+  }
+
+  if (!driverPhone || driverPhone.trim().length < 5) {
+    throw new BadRequestException("Driver phone is required");
+  }
+
+  const trip = await this.prisma.trip.findUnique({
+    where: { id: tripId },
+  });
+
+  if (!trip) {
+    throw new NotFoundException("Trip not found");
+  }
+
+  const user = await this.prisma.user.findUnique({
+    where: { phone: driverPhone.trim() },
+  });
+
+  if (!user) {
+    throw new NotFoundException("Driver user not found for this phone");
+  }
+
+  const driver = await this.prisma.driver.findUnique({
+    where: { userId: user.id },
+  });
+
+  if (!driver) {
+    throw new NotFoundException("Driver profile not found for this phone");
+  }
+
+  if (driver.kycStatus !== "APPROVED") {
+    throw new BadRequestException("Driver is not approved");
+  }
+
+  const updated = await this.prisma.trip.update({
+    where: { id: tripId },
+    data: {
+      driverId: driver.id,
+      status: "ACCEPTED",
+      acceptedAt: new Date(),
+    },
+  });
+
+  return {
+    ok: true,
+    message: "Driver assigned successfully",
+    trip: updated,
+  };
+}
+
+  async startTrip(tripId: string) {
+    const trip = await this.prisma.trip.findUnique({
+      where: { id: tripId },
+    });
+
+    if (!trip) {
+      throw new NotFoundException("Trip not found");
+    }
+
+    const updated = await this.prisma.trip.update({
+      where: { id: tripId },
+      data: {
+        status: "STARTED",
+        startedAt: new Date(),
+      },
+    });
+
+    return {
+      ok: true,
+      message: "Trip started successfully",
+      trip: updated,
+    };
+  }
+
+  async completeTrip(tripId: string) {
+    const trip = await this.prisma.trip.findUnique({
+      where: { id: tripId },
+    });
+
+    if (!trip) {
+      throw new NotFoundException("Trip not found");
+    }
+
+    const updated = await this.prisma.trip.update({
+      where: { id: tripId },
+      data: {
+        status: "COMPLETED",
+        completedAt: new Date(),
+      },
+    });
+
+    return {
+      ok: true,
+      message: "Trip completed successfully",
+      trip: updated,
+    };
   }
 
   async approveDriver(driverId: string, user: any) {
@@ -153,17 +291,19 @@ export class AdminService {
       },
     });
 
-    await this.prisma.auditLog.create({
-      data: {
-        adminUserId: user.sub,
-        action: "DRIVER_APPROVED",
-        entityType: "Driver",
-        entityId: driverId,
-        metadata: {
-          kycStatus: "APPROVED",
+    await this.prisma.auditLog
+      .create({
+        data: {
+          adminUserId: user.sub,
+          action: "DRIVER_APPROVED",
+          entityType: "Driver",
+          entityId: driverId,
+          metadata: {
+            kycStatus: "APPROVED",
+          },
         },
-      },
-    }).catch(() => null);
+      })
+      .catch(() => null);
 
     return { ok: true, driver };
   }
@@ -194,18 +334,20 @@ export class AdminService {
       },
     });
 
-    await this.prisma.auditLog.create({
-      data: {
-        adminUserId: user.sub,
-        action: "DRIVER_REJECTED",
-        entityType: "Driver",
-        entityId: driverId,
-        metadata: {
-          note,
-          kycStatus: "REJECTED",
+    await this.prisma.auditLog
+      .create({
+        data: {
+          adminUserId: user.sub,
+          action: "DRIVER_REJECTED",
+          entityType: "Driver",
+          entityId: driverId,
+          metadata: {
+            note,
+            kycStatus: "REJECTED",
+          },
         },
-      },
-    }).catch(() => null);
+      })
+      .catch(() => null);
 
     return { ok: true, driver };
   }
@@ -224,7 +366,9 @@ export class AdminService {
       throw new NotFoundException(`Driver not found: ${driverId}`);
     }
 
-    const note = (body?.note?.trim() || "Suspended by admin").slice(0, 300);
+    const note = (
+      body?.note?.trim() || "Suspended by admin"
+    ).slice(0, 300);
 
     const driver = await this.prisma.driver.update({
       where: { id: driverId },
@@ -234,18 +378,20 @@ export class AdminService {
       },
     });
 
-    await this.prisma.auditLog.create({
-      data: {
-        adminUserId: user.sub,
-        action: "DRIVER_SUSPENDED",
-        entityType: "Driver",
-        entityId: driverId,
-        metadata: {
-          note,
-          availability: "SUSPENDED",
+    await this.prisma.auditLog
+      .create({
+        data: {
+          adminUserId: user.sub,
+          action: "DRIVER_SUSPENDED",
+          entityType: "Driver",
+          entityId: driverId,
+          metadata: {
+            note,
+            availability: "SUSPENDED",
+          },
         },
-      },
-    }).catch(() => null);
+      })
+      .catch(() => null);
 
     return { ok: true, driver };
   }
@@ -277,17 +423,19 @@ export class AdminService {
       },
     });
 
-    await this.prisma.auditLog.create({
-      data: {
-        adminUserId: user.sub,
-        action: "DRIVER_UNSUSPENDED",
-        entityType: "Driver",
-        entityId: driverId,
-        metadata: {
-          availability: "OFFLINE",
+    await this.prisma.auditLog
+      .create({
+        data: {
+          adminUserId: user.sub,
+          action: "DRIVER_UNSUSPENDED",
+          entityType: "Driver",
+          entityId: driverId,
+          metadata: {
+            availability: "OFFLINE",
+          },
         },
-      },
-    }).catch(() => null);
+      })
+      .catch(() => null);
 
     return { ok: true, driver };
   }

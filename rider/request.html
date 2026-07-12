@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Request Trip - TangoLyft</title>
+  <link rel="stylesheet" href="./rider.css" />
+</head>
+<body>
+
+  <div class="container">
+    <div class="card">
+
+      <h1>Request a Trip</h1>
+      <p class="subtitle">
+        Create a new ride or delivery request
+      </p>
+
+      <div id="message"></div>
+
+      <div class="form-group">
+        <label>Phone Number</label>
+        <input type="text" id="phone" placeholder="2348032840615" />
+      </div>
+
+      <div class="form-group">
+        <label>Pickup Address</label>
+        <input type="text" id="pickupAddress" placeholder="Pickup address" />
+      </div>
+
+      <div class="form-group">
+        <label>Dropoff Address</label>
+        <input type="text" id="dropoffAddress" placeholder="Dropoff address" />
+      </div>
+
+      <div class="form-group">
+        <label>City</label>
+        <select id="city">
+          <option value="ABUJA">Abuja</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Service Type</label>
+        <select id="serviceType">
+          <option value="CAR_RIDE">Car Ride</option>
+          <option value="BIKE_DELIVERY">Bike Delivery</option>
+        </select>
+      </div>
+
+      <div id="bikeDeliveryFields" style="display:none;">
+        <div class="form-group">
+          <label>Item Description</label>
+          <input type="text" id="itemDescription" placeholder="Example: small package, food, documents" />
+        </div>
+
+        <div class="form-group">
+          <label>Recipient Name</label>
+          <input type="text" id="recipientName" placeholder="Recipient name" />
+        </div>
+
+        <div class="form-group">
+          <label>Recipient Phone</label>
+          <input type="text" id="recipientPhone" placeholder="Recipient phone number" />
+        </div>
+
+        <div class="form-group">
+          <label>Note to Courier</label>
+          <input type="text" id="noteToCourier" placeholder="Optional note" />
+        </div>
+      </div>
+
+      <button id="requestTripBtn" class="btn-primary">
+        Request Trip
+      </button>
+
+      <p style="margin-top:20px;">
+        <a href="./status.html">Check trip status</a>
+      </p>
+
+    </div>
+  </div>
+
+  <script src="./rider.js"></script>
+</body>
+</html>

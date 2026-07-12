@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Driver Application - TangoLyft</title>
+  <link rel="stylesheet" href="./driver.css" />
+</head>
+<body>
+
+  <div class="container">
+    <div class="card">
+
+      <h1>Become a TangoLyft Driver</h1>
+      <p class="subtitle">Apply to drive with TangoLyft</p>
+
+      <div id="message"></div>
+
+      <form id="applyForm">
+
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="fullName" required />
+        </div>
+
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="text" id="phone" required />
+        </div>
+
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="email" />
+        </div>
+
+        <div class="form-group">
+  <label>City</label>
+  <select id="city">
+    <option value="ABUJA">Abuja</option>
+    <option value="LAGOS">Lagos</option>
+  </select>
+</div>
+        <div class="form-group">
+          <label>Vehicle Type</label>
+          <select id="vehicleType">
+            <option value="BIKE_COURIER">Bike Courier</option>
+            <option value="CAR_DRIVER">Car Driver</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-primary">
+          Submit Application
+        </button>
+
+      </form>
+
+    </div>
+  </div>
+
+  <script src="./driver.js"></script>
+</body>
+</html>

@@ -161,6 +161,22 @@ export class TripsService {
       if (!dto?.serviceType) {
         return { ok: false, message: "serviceType is required" };
       }
+      if (!dto?.phone) {
+  return { ok: false, message: "phone is required" };
+}
+
+let rider = await this.prisma.user.findUnique({
+  where: { phone: dto.phone },
+});
+
+if (!rider) {
+  rider = await this.prisma.user.create({
+    data: {
+      phone: dto.phone,
+      role: "RIDER",
+    },
+  });
+}
 
       if (
         !dto?.pickupAddress ||
@@ -187,7 +203,7 @@ export class TripsService {
       const data: any = {
         serviceType: dto.serviceType,
         city: dto.city ?? "ABUJA",
-        riderId: user.sub,
+        riderId: rider.id,
 
         pickupAddress: dto.pickupAddress,
         pickupLat: dto.pickupLat,
@@ -239,6 +255,56 @@ export class TripsService {
     }
   }
 
+async riderStatus(rawPhone: string) {
+  try {
+    const phone = String(rawPhone || "")
+      .trim()
+      .replace(/\s+/g, "")
+      .replace(/-/g, "");
+
+    if (!phone) {
+      return { ok: false, message: "phone is required" };
+    }
+
+    const rider = await this.prisma.user.findUnique({
+      where: { phone },
+    });
+
+    if (!rider) {
+      return {
+        ok: true,
+        message: "No rider found for this phone",
+        trip: null,
+      };
+    }
+
+    const trip = await this.prisma.trip.findFirst({
+      where: {
+        riderId: rider.id,
+      },
+      orderBy: {
+        requestedAt: "desc",
+      },
+      include: {
+        rider: true,
+        driver: {
+          include: {
+            user: true,
+          },
+        },
+        delivery: true,
+        fare: true,
+      },
+    });
+
+    return {
+      ok: true,
+      trip,
+    };
+  } catch (e) {
+    return { ok: false, message: prismaErrMessage(e) };
+  }
+}
   async myTrips(user: any) {
     try {
       const trips = await this.prisma.trip.findMany({
@@ -273,108 +339,120 @@ export class TripsService {
     return result.count;
   }
 
-  async inbox(user: any) {
-    try {
-      const expiredCount = await this.expireStaleRequestedTrips();
+async inbox(user: any) {
+  try {
+    const expiredCount = await this.expireStaleRequestedTrips();
 
-      const driver = await this.prisma.driver.findUnique({
-        where: { userId: user.sub },
-        include: { location: true },
-      });
+    const driver = await this.prisma.driver.findUnique({
+      where: { userId: user.sub },
+      include: { location: true },
+    });
 
-      if (!driver) {
-        return { ok: false, message: "Driver profile not found" };
-      }
+    if (!driver) {
+      return { ok: false, message: "Driver profile not found" };
+    }
 
-      if (driver.kycStatus !== "APPROVED") {
-        return { ok: false, message: "KYC not approved" };
-      }
+    if (driver.kycStatus !== "APPROVED") {
+      return { ok: false, message: "KYC not approved" };
+    }
 
-      if (driver.availability !== "ONLINE") {
-        return { ok: false, message: "Driver is not ONLINE" };
-      }
+    if (driver.availability !== "ONLINE") {
+      return { ok: false, message: "Driver is not ONLINE" };
+    }
 
-      if (!driver.location) {
-        return { ok: false, message: "Driver location missing. Update location first." };
-      }
+    const now = Date.now();
+    const recentWindowMs = 60 * 60 * 1000;
+    const cutoff = new Date(now - recentWindowMs);
 
-      const now = Date.now();
-      const maxAgeMs = 2 * 60 * 1000;
-      const recentWindowMs = 60 * 60 * 1000;
-
-      const seenAtMs = new Date(driver.location.lastSeenAt).getTime();
-      const isFresh = now - seenAtMs <= maxAgeMs;
-
-      if (!isFresh) {
-        return { ok: false, message: "Driver location is stale. Update location first." };
-      }
-
-      const cutoff = new Date(now - recentWindowMs);
-
-      const trips = await this.prisma.trip.findMany({
-        where: {
-          status: TripStatus.REQUESTED,
-          driverId: null,
-          city: driver.city,
-          requestedAt: {
-            gte: cutoff,
+    const trips = await this.prisma.trip.findMany({
+      where: {
+        OR: [
+          {
+            status: TripStatus.REQUESTED,
+            driverId: null,
+            city: driver.city,
+            requestedAt: {
+              gte: cutoff,
+            },
           },
-        },
-        include: {
-          rider: true,
-          delivery: true,
-        },
-      });
+          {
+            driverId: driver.id,
+            status: {
+              in: [TripStatus.ACCEPTED, TripStatus.STARTED],
+            },
+          },
+        ],
+      },
+      include: {
+        rider: true,
+        delivery: true,
+      },
+      orderBy: {
+        requestedAt: "desc",
+      },
+    });
 
-      const ranked = trips
-        .filter((trip) =>
-          serviceTypeMatchesDriver(driver.driverType as any, trip.serviceType),
-        )
-        .filter((trip) => trip.pickupLat != null && trip.pickupLng != null)
-        .map((trip) => {
-          const distanceKm = this.haversineKm(
-            driver.location!.lat,
-            driver.location!.lng,
+    const ranked = trips
+      .filter((trip) => {
+        if (trip.driverId === driver.id) return true;
+
+        return serviceTypeMatchesDriver(
+          driver.driverType as any,
+          trip.serviceType,
+        );
+      })
+      .filter((trip) => trip.pickupLat != null && trip.pickupLng != null)
+      .map((trip) => {
+        let distanceKm = null;
+
+        if (driver.location) {
+          distanceKm = this.haversineKm(
+            driver.location.lat,
+            driver.location.lng,
             trip.pickupLat!,
             trip.pickupLng!,
           );
+        }
 
-          return {
-            ...trip,
-            distanceKm,
-          };
-        })
-        .sort((a, b) => {
-          if (a.distanceKm !== b.distanceKm) return a.distanceKm - b.distanceKm;
-          return (
-            new Date(b.requestedAt).getTime() -
-            new Date(a.requestedAt).getTime()
-          );
-        })
-        .slice(0, 20);
+        return {
+          ...trip,
+          distanceKm,
+        };
+      })
+      .sort((a, b) => {
+        if (a.distanceKm !== null && b.distanceKm !== null) {
+          return a.distanceKm - b.distanceKm;
+        }
 
-      return {
-        ok: true,
-        phase4Marker: "PHASE4-FRESH-COPY-2",
-        expiredCount,
-        count: ranked.length,
-        windowMinutes: 60,
-        driver: {
-          id: driver.id,
-          userId: driver.userId,
-          driverType: driver.driverType,
-          city: driver.city,
-          availability: driver.availability,
-          lat: driver.location.lat,
-          lng: driver.location.lng,
-          lastSeenAt: driver.location.lastSeenAt,
-        },
-        trips: ranked,
-      };
-    } catch (e) {
-      return { ok: false, message: prismaErrMessage(e) };
-    }
+        return (
+          new Date(b.requestedAt).getTime() -
+          new Date(a.requestedAt).getTime()
+        );
+      })
+      .slice(0, 20);
+
+    return {
+      ok: true,
+      phase4Marker: "PHASE4-INBOX-ASSIGNED-TRIPS",
+      expiredCount,
+      count: ranked.length,
+      windowMinutes: 60,
+      driver: {
+        id: driver.id,
+        userId: driver.userId,
+        driverType: driver.driverType,
+        city: driver.city,
+        availability: driver.availability,
+        lat: driver.location?.lat ?? null,
+        lng: driver.location?.lng ?? null,
+        lastSeenAt: driver.location?.lastSeenAt ?? null,
+      },
+      trips: ranked,
+    };
+  } catch (e) {
+    return { ok: false, message: prismaErrMessage(e) };
   }
+}
 
   async accept(user: any, tripId: string) {
     try {

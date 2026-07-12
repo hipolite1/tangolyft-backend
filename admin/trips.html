@@ -7,49 +7,129 @@
   <link rel="stylesheet" href="./admin.css" />
 </head>
 <body data-page="trips">
-  <div class="layout">
+  <div class="admin-layout">
     <aside class="sidebar">
-      <h2>TangoLyft Admin</h2>
-      <<nav>
-  <a class="nav-link" href="./pending-drivers.html">Pending Drivers</a>
-  <a class="nav-link" href="./approved-drivers.html">Approved Drivers</a>
-  <a class="nav-link active" href="./trips.html">Trips</a>
-</nav>
-      <button id="logoutBtn" class="btn danger full">Logout</button>
+      <div class="brand">TangoLyft Admin</div>
+      <nav class="nav">
+        <a href="./pending-drivers.html">Pending Drivers</a>
+        <a href="./approved-drivers.html">Approved Drivers</a>
+        <a href="./trips.html" class="active">Trips</a>
+      </nav>
     </aside>
 
     <main class="content">
-      <div class="topbar">
-        <div>
-          <h1>Trips</h1>
-          <p class="muted">Monitor trip activity and status</p>
+      <div class="page-header">
+        <h1>Trips</h1>
+        <div class="row gap">
+          <button id="refreshBtn" class="btn">Refresh</button>
+          <button id="logoutBtn" class="btn danger">Logout</button>
         </div>
-        <button id="refreshBtn" class="btn primary">Refresh</button>
       </div>
 
-      <div id="status" class="status"></div>
+      <div id="status" class="status info"></div>
+      <div id="lastUpdated" class="muted"></div>
+
+      <div class="stats-grid">
+        <div class="stat-card" id="statCardTotal">
+          <div class="stat-label">Total Trips</div>
+          <div id="statTotalTrips" class="stat-value">0</div>
+        </div>
+        <div class="stat-card" id="statCardRequested">
+          <div class="stat-label">Requested</div>
+          <div id="statRequestedTrips" class="stat-value">0</div>
+        </div>
+        <div class="stat-card" id="statCardActive">
+          <div class="stat-label">Active</div>
+          <div id="statActiveTrips" class="stat-value">0</div>
+        </div>
+        <div class="stat-card" id="statCardCompleted">
+          <div class="stat-label">Completed</div>
+          <div id="statCompletedTrips" class="stat-value">0</div>
+        </div>
+        <div class="stat-card" id="statCardWaived">
+          <div class="stat-label">Waived</div>
+          <div id="statWaivedTrips" class="stat-value">0</div>
+        </div>
+      </div>
 
       <div class="card">
-        <div id="emptyState" class="empty-state" style="display:none;">
+        <div class="filters-grid">
+          <div class="field">
+            <label for="tripSearch">Search Trip ID / Rider Phone</label>
+            <input
+              id="tripSearch"
+              type="text"
+              placeholder="Enter trip ID or rider phone"
+            />
+          </div>
+
+          <div class="field">
+            <label for="statusFilter">Status</label>
+            <select id="statusFilter">
+              <option value="">All Statuses</option>
+              <option value="REQUESTED">REQUESTED</option>
+              <option value="ACCEPTED">ACCEPTED</option>
+              <option value="STARTED">STARTED</option>
+              <option value="COMPLETED">COMPLETED</option>
+              <option value="CANCELLED">CANCELLED</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="commitmentFilter">Commitment</label>
+            <select id="commitmentFilter">
+              <option value="">All Commitments</option>
+              <option value="PENDING">PENDING</option>
+              <option value="WAIVED">WAIVED</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="sortFilter">Sort By</label>
+            <select id="sortFilter">
+              <option value="requested_desc">Requested (Newest)</option>
+              <option value="requested_asc">Requested (Oldest)</option>
+              <option value="status_asc">Status (A-Z)</option>
+              <option value="status_desc">Status (Z-A)</option>
+              <option value="commitment_asc">Commitment (A-Z)</option>
+              <option value="commitment_desc">Commitment (Z-A)</option>
+              <option value="city_asc">City (A-Z)</option>
+              <option value="city_desc">City (Z-A)</option>
+            </select>
+          </div>
+
+          <div class="field actions">
+            <label>&nbsp;</label>
+            <button id="clearFiltersBtn" class="btn">Clear Filters</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div id="emptyState" class="empty-state" style="display: none;">
           No trips found.
         </div>
 
-        <table id="tripsTable">
-  <thead>
-    <tr>
-      <th>Trip ID</th>
-      <th>Rider Phone</th>
-      <th>City</th>
-      <th>Service Type</th>
-      <th>Status</th>
-      <th>Commitment</th>
-      <th>Driver</th>
-      <th>Requested At</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody id="tripsTbody"></tbody>
-</table>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Trip ID</th>
+              <th>Rider</th>
+              <th>City</th>
+              <th>Service</th>
+              <th>Status</th>
+              <th>Commitment</th>
+              <th>Driver</th>
+              <th>Requested</th>
+              <th>Completed</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tripsTbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
 
   <script src="./admin.js"></script>
 </body>

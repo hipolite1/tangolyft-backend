@@ -11,6 +11,29 @@ const compression_1 = __importDefault(require("compression"));
 const express_1 = __importDefault(require("express"));
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    const allowedOrigins = new Set([
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+        "http://127.0.0.1:5501",
+        "http://localhost:5501",
+        "http://127.0.0.1:5502",
+        "http://localhost:5502",
+        "http://127.0.0.1:5503",
+        "http://localhost:5503",
+    ]);
+    app.use((req, res, next) => {
+        const origin = req.headers.origin;
+        if (origin && allowedOrigins.has(origin)) {
+            res.header("Access-Control-Allow-Origin", origin);
+            res.header("Vary", "Origin");
+        }
+        res.header("Access-Control-Allow-Methods", "GET,POST,PATCH,PUT,DELETE,OPTIONS");
+        res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        if (req.method === "OPTIONS") {
+            return res.sendStatus(204);
+        }
+        next();
+    });
     app.use(express_1.default.json({
         verify: (req, _res, buf) => {
             req.rawBody = buf;
@@ -30,6 +53,7 @@ async function bootstrap() {
         forbidNonWhitelisted: true,
         transform: true,
     }));
+    console.log("ADMIN_CORS_FIX_LIVE");
     await app.listen(process.env.PORT || 3000);
 }
 bootstrap();

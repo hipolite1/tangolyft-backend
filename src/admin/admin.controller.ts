@@ -46,6 +46,40 @@ export class AdminController {
   ) {
     return this.adminService.waiveCommitment(tripId, user, body);
   }
+  @RequireRole("ADMIN")
+  @Post("trips/:tripId/assign-driver")
+async assignDriver(
+  @Param("tripId") tripId: string,
+  @Body() body: { driverName: string },
+) {
+  return this.adminService.assignDriver(tripId, body.driverName);
+}
+@RequireRole("ADMIN")
+@Post("trips/:tripId/start")
+async startTrip(@Param("tripId") tripId: string) {
+  return this.adminService.startTrip(tripId);
+}
+
+@RequireRole("ADMIN")
+@Post("trips/:tripId/complete")
+async completeTrip(@Param("tripId") tripId: string) {
+  return this.adminService.completeTrip(tripId);
+}
+
+  // ✅ FIXED: Cancel Trip endpoint (NOW INSIDE CLASS)
+  @RequireRole("ADMIN")
+  @Post("trips/:tripId/cancel")
+  async cancelTrip(
+    @Param("tripId") tripId: string,
+    @Body() body: { reason?: string },
+    @CurrentUser() user: any,
+  ) {
+    return this.adminService.cancelTrip(
+      tripId,
+      body?.reason || "Cancelled by admin",
+      user?.sub,
+    );
+  }
 
   @RequireRole("ADMIN")
   @Post("drivers/:driverId/approve")

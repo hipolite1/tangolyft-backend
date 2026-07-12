@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Driver Login - TangoLyft</title>
+  <link rel="stylesheet" href="./driver.css" />
+</head>
+<body>
+
+  <div class="container">
+    <div class="card">
+
+      <h1>Driver Login</h1>
+      <p class="subtitle">Login with phone and OTP</p>
+
+      <div id="message"></div>
+
+      <div class="form-group">
+        <label>Phone Number</label>
+        <input type="text" id="phone" />
+      </div>
+
+      <button id="requestOtpBtn" class="btn-primary">
+        Request OTP
+      </button>
+
+      <div class="form-group" style="margin-top:20px;">
+        <label>OTP</label>
+        <input type="text" id="otp" />
+      </div>
+
+      <button id="verifyOtpBtn" class="btn-primary">
+        Verify & Login
+      </button>
+
+    </div>
+  </div>
+
+  <script src="./driver.js"></script>
+</body>
+</html>

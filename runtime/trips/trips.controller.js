@@ -22,23 +22,51 @@ let TripsController = class TripsController {
     constructor(tripsService) {
         this.tripsService = tripsService;
     }
-    requestTrip(user, dto) {
-        return this.tripsService.requestTrip(user, dto);
+    requestTrip(dto) {
+        return this.tripsService.requestTrip(null, dto);
+    }
+    riderStatus(phone) {
+        return this.tripsService.riderStatus(phone);
+    }
+    myTrips(user) {
+        return this.tripsService.myTrips(user);
     }
     inbox(user) {
         return this.tripsService.inbox(user);
     }
+    accept(user, tripId) {
+        return this.tripsService.accept(user, tripId);
+    }
+    start(user, tripId) {
+        return this.tripsService.start(user, tripId);
+    }
+    complete(user, tripId) {
+        return this.tripsService.complete(user, tripId);
+    }
 };
 exports.TripsController = TripsController;
 __decorate([
-    (0, require_role_1.RequireRole)("RIDER", "ADMIN"),
     (0, common_1.Post)("request"),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
-    __param(1, (0, common_1.Body)()),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, request_trip_dto_1.RequestTripDto]),
+    __metadata("design:paramtypes", [request_trip_dto_1.RequestTripDto]),
     __metadata("design:returntype", void 0)
 ], TripsController.prototype, "requestTrip", null);
+__decorate([
+    (0, common_1.Get)("status/:phone"),
+    __param(0, (0, common_1.Param)("phone")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], TripsController.prototype, "riderStatus", null);
+__decorate([
+    (0, require_role_1.RequireRole)("RIDER", "ADMIN"),
+    (0, common_1.Get)("mine"),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], TripsController.prototype, "myTrips", null);
 __decorate([
     (0, require_role_1.RequireRole)("DRIVER", "ADMIN"),
     (0, common_1.Get)("inbox"),
@@ -47,6 +75,33 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], TripsController.prototype, "inbox", null);
+__decorate([
+    (0, require_role_1.RequireRole)("DRIVER", "ADMIN"),
+    (0, common_1.Post)(":tripId/accept"),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)("tripId")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], TripsController.prototype, "accept", null);
+__decorate([
+    (0, require_role_1.RequireRole)("DRIVER", "ADMIN"),
+    (0, common_1.Post)(":tripId/start"),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)("tripId")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], TripsController.prototype, "start", null);
+__decorate([
+    (0, require_role_1.RequireRole)("DRIVER", "ADMIN"),
+    (0, common_1.Post)(":tripId/complete"),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)("tripId")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], TripsController.prototype, "complete", null);
 exports.TripsController = TripsController = __decorate([
     (0, common_1.Controller)("trips"),
     __metadata("design:paramtypes", [trips_service_1.TripsService])

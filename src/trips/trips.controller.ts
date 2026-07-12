@@ -8,10 +8,16 @@ import { TripsService } from "./trips.service";
 export class TripsController {
   constructor(private readonly tripsService: TripsService) {}
 
-  @RequireRole("RIDER", "ADMIN")
   @Post("request")
-  requestTrip(@CurrentUser() user: any, @Body() dto: RequestTripDto) {
-    return this.tripsService.requestTrip(user, dto);
+  requestTrip(@Body() dto: RequestTripDto) {
+    return this.tripsService.requestTrip(null, dto);
+  }
+
+  // MVP rider status lookup by phone.
+  // Later we can protect this with OTP before public launch.
+  @Get("status/:phone")
+  riderStatus(@Param("phone") phone: string) {
+    return this.tripsService.riderStatus(phone);
   }
 
   @RequireRole("RIDER", "ADMIN")

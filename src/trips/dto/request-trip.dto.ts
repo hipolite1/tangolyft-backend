@@ -10,6 +10,8 @@ import {
 } from "class-validator";
 
 export class RequestTripDto {
+  @IsString()
+  phone: string;
   @IsEnum(ServiceType)
   serviceType: ServiceType;
 

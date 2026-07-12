@@ -9,41 +9,57 @@ export class DriverController {
   constructor(private readonly prisma: PrismaService) {}
 
   // Apply to become a driver/courier
-  @RequireRole("RIDER", "DRIVER", "ADMIN")
-  @Post("apply")
-  async apply(@CurrentUser() user: any, @Body() body: any) {
-    const driverType = body?.driverType; // "CAR_DRIVER" or "BIKE_COURIER"
-    if (!driverType) {
-      return {
-        ok: false,
-        message: "driverType is required: CAR_DRIVER or BIKE_COURIER",
-      };
-    }
+ @Post("apply")
+async apply(@Body() body: any) {
+  const {
+    fullName,
+    phone,
+    email,
+    city,
+    vehicleType,
+  } = body || {};
 
-    const existing = await this.prisma.driver.findUnique({
-      where: { userId: user.sub },
-    });
-    if (existing) return { ok: true, driver: existing };
-
-    const driver = await this.prisma.driver.create({
-      data: {
-        userId: user.sub,
-        driverType,
-        kycStatus: "PENDING",
-        availability: "OFFLINE",
-        city: "ABUJA",
-      },
-    });
-
-    // Upgrade role to DRIVER (so they can access driver endpoints)
-    await this.prisma.user.update({
-      where: { id: user.sub },
-      data: { role: "DRIVER" },
-    });
-
-    return { ok: true, driver };
+  if (!fullName || !phone || !city || !vehicleType) {
+    return {
+      ok: false,
+      message: "fullName, phone, city and vehicleType are required",
+    };
   }
 
+  const existingUser = await this.prisma.user.findUnique({
+    where: { phone },
+  });
+
+  if (existingUser) {
+    return {
+      ok: false,
+      message: "Phone number already exists",
+    };
+  }
+
+  const user = await this.prisma.user.create({
+    data: {
+      phone,
+      role: "DRIVER",
+    },
+  });
+
+  const driver = await this.prisma.driver.create({
+    data: {
+      userId: user.id,
+      driverType: vehicleType,
+      kycStatus: "PENDING",
+      availability: "OFFLINE",
+      city,
+    },
+  });
+
+  return {
+    ok: true,
+    message: "Driver application submitted successfully",
+    driver,
+  };
+}
   // Add a KYC document record (placeholder fileUrl for now)
   @RequireRole("DRIVER", "ADMIN")
   @Post("documents")

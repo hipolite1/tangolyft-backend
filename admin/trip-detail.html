@@ -30,6 +30,25 @@
       <div id="status" class="status info"></div>
 
       <div class="card">
+        <div class="row gap" style="margin-bottom: 16px;">
+          <button id="waiveTripBtn" class="btn success">Waive Commitment</button>
+          <button id="cancelTripBtn" class="btn danger">Cancel Trip</button>
+        </div>
+
+        <div class="row gap" style="margin-bottom: 16px;">
+          <input
+            type="text"
+            id="assignDriverInput"
+            class="input"
+            placeholder="Enter driver phone"
+            style="max-width: 240px;"
+          />
+
+          <button id="assignDriverBtn" class="btn">
+            Assign Driver
+          </button>
+        </div>
+
         <table class="table">
           <tbody>
             <tr><th>Trip ID</th><td id="tripId">-</td></tr>
@@ -45,6 +64,12 @@
             <tr><th>Dropoff Lat</th><td id="dropoffLat">-</td></tr>
             <tr><th>Dropoff Lng</th><td id="dropoffLng">-</td></tr>
             <tr><th>Fare</th><td id="fareAmount">-</td></tr>
+
+            <tr><th>Item Description</th><td id="itemDescription">-</td></tr>
+            <tr><th>Recipient Name</th><td id="recipientName">-</td></tr>
+            <tr><th>Recipient Phone</th><td id="recipientPhone">-</td></tr>
+            <tr><th>Courier Note</th><td id="noteToCourier">-</td></tr>
+
             <tr><th>Requested At</th><td id="requestedAt">-</td></tr>
             <tr><th>Accepted At</th><td id="acceptedAt">-</td></tr>
             <tr><th>Started At</th><td id="startedAt">-</td></tr>

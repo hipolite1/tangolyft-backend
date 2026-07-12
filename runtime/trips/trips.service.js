@@ -138,18 +138,43 @@ let TripsService = class TripsService {
     }
     async requestTrip(user, dto) {
         try {
-            if (!dto?.serviceType)
+            if (!dto?.serviceType) {
                 return { ok: false, message: "serviceType is required" };
-            if (!dto?.pickupAddress || dto.pickupLat === undefined || dto.pickupLng === undefined) {
-                return { ok: false, message: "pickupAddress, pickupLat, pickupLng are required" };
             }
-            if (!dto?.dropoffAddress || dto.dropoffLat === undefined || dto.dropoffLng === undefined) {
-                return { ok: false, message: "dropoffAddress, dropoffLat, dropoffLng are required" };
+            if (!dto?.phone) {
+                return { ok: false, message: "phone is required" };
+            }
+            let rider = await this.prisma.user.findUnique({
+                where: { phone: dto.phone },
+            });
+            if (!rider) {
+                rider = await this.prisma.user.create({
+                    data: {
+                        phone: dto.phone,
+                        role: "RIDER",
+                    },
+                });
+            }
+            if (!dto?.pickupAddress ||
+                dto.pickupLat === undefined ||
+                dto.pickupLng === undefined) {
+                return {
+                    ok: false,
+                    message: "pickupAddress, pickupLat, pickupLng are required",
+                };
+            }
+            if (!dto?.dropoffAddress ||
+                dto.dropoffLat === undefined ||
+                dto.dropoffLng === undefined) {
+                return {
+                    ok: false,
+                    message: "dropoffAddress, dropoffLat, dropoffLng are required",
+                };
             }
             const data = {
                 serviceType: dto.serviceType,
                 city: dto.city ?? "ABUJA",
-                riderId: user.sub,
+                riderId: rider.id,
                 pickupAddress: dto.pickupAddress,
                 pickupLat: dto.pickupLat,
                 pickupLng: dto.pickupLng,
@@ -179,9 +204,60 @@ let TripsService = class TripsService {
             }
             const trip = await this.prisma.trip.create({
                 data,
-                include: { rider: true, driver: true, delivery: true, fare: true },
+                include: {
+                    rider: true,
+                    driver: true,
+                    delivery: true,
+                    fare: true,
+                },
             });
             return { ok: true, trip };
+        }
+        catch (e) {
+            return { ok: false, message: prismaErrMessage(e) };
+        }
+    }
+    async riderStatus(rawPhone) {
+        try {
+            const phone = String(rawPhone || "")
+                .trim()
+                .replace(/\s+/g, "")
+                .replace(/-/g, "");
+            if (!phone) {
+                return { ok: false, message: "phone is required" };
+            }
+            const rider = await this.prisma.user.findUnique({
+                where: { phone },
+            });
+            if (!rider) {
+                return {
+                    ok: true,
+                    message: "No rider found for this phone",
+                    trip: null,
+                };
+            }
+            const trip = await this.prisma.trip.findFirst({
+                where: {
+                    riderId: rider.id,
+                },
+                orderBy: {
+                    requestedAt: "desc",
+                },
+                include: {
+                    rider: true,
+                    driver: {
+                        include: {
+                            user: true,
+                        },
+                    },
+                    delivery: true,
+                    fare: true,
+                },
+            });
+            return {
+                ok: true,
+                trip,
+            };
         }
         catch (e) {
             return { ok: false, message: prismaErrMessage(e) };
@@ -219,63 +295,78 @@ let TripsService = class TripsService {
     }
     async inbox(user) {
         try {
-            console.log("INBOX_PHASE4_LOCAL_MARKER");
             const expiredCount = await this.expireStaleRequestedTrips();
-            console.log("INBOX_PHASE4_EXPIRED_COUNT", expiredCount);
             const driver = await this.prisma.driver.findUnique({
                 where: { userId: user.sub },
                 include: { location: true },
             });
-            if (!driver)
+            if (!driver) {
                 return { ok: false, message: "Driver profile not found" };
+            }
             if (driver.kycStatus !== "APPROVED") {
                 return { ok: false, message: "KYC not approved" };
             }
             if (driver.availability !== "ONLINE") {
                 return { ok: false, message: "Driver is not ONLINE" };
             }
-            if (!driver.location) {
-                return { ok: false, message: "Driver location missing. Update location first." };
-            }
             const now = Date.now();
-            const maxAgeMs = 2 * 60 * 1000;
             const recentWindowMs = 60 * 60 * 1000;
-            const seenAtMs = new Date(driver.location.lastSeenAt).getTime();
-            const isFresh = now - seenAtMs <= maxAgeMs;
-            if (!isFresh) {
-                return { ok: false, message: "Driver location is stale. Update location first." };
-            }
             const cutoff = new Date(now - recentWindowMs);
             const trips = await this.prisma.trip.findMany({
                 where: {
-                    status: client_1.TripStatus.REQUESTED,
-                    driverId: null,
-                    city: driver.city,
-                    requestedAt: {
-                        gte: cutoff,
-                    },
+                    OR: [
+                        {
+                            status: client_1.TripStatus.REQUESTED,
+                            driverId: null,
+                            city: driver.city,
+                            requestedAt: {
+                                gte: cutoff,
+                            },
+                        },
+                        {
+                            driverId: driver.id,
+                            status: {
+                                in: [client_1.TripStatus.ACCEPTED, client_1.TripStatus.STARTED],
+                            },
+                        },
+                    ],
                 },
-                include: { rider: true, delivery: true },
+                include: {
+                    rider: true,
+                    delivery: true,
+                },
+                orderBy: {
+                    requestedAt: "desc",
+                },
             });
             const ranked = trips
-                .filter((trip) => serviceTypeMatchesDriver(driver.driverType, trip.serviceType))
+                .filter((trip) => {
+                if (trip.driverId === driver.id)
+                    return true;
+                return serviceTypeMatchesDriver(driver.driverType, trip.serviceType);
+            })
                 .filter((trip) => trip.pickupLat != null && trip.pickupLng != null)
                 .map((trip) => {
-                const distanceKm = this.haversineKm(driver.location.lat, driver.location.lng, trip.pickupLat, trip.pickupLng);
+                let distanceKm = null;
+                if (driver.location) {
+                    distanceKm = this.haversineKm(driver.location.lat, driver.location.lng, trip.pickupLat, trip.pickupLng);
+                }
                 return {
                     ...trip,
                     distanceKm,
                 };
             })
                 .sort((a, b) => {
-                if (a.distanceKm !== b.distanceKm)
+                if (a.distanceKm !== null && b.distanceKm !== null) {
                     return a.distanceKm - b.distanceKm;
-                return new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime();
+                }
+                return (new Date(b.requestedAt).getTime() -
+                    new Date(a.requestedAt).getTime());
             })
                 .slice(0, 20);
             return {
                 ok: true,
-                phase4Marker: "PHASE4-FRESH-COPY-1",
+                phase4Marker: "PHASE4-INBOX-ASSIGNED-TRIPS",
                 expiredCount,
                 count: ranked.length,
                 windowMinutes: 60,
@@ -285,9 +376,9 @@ let TripsService = class TripsService {
                     driverType: driver.driverType,
                     city: driver.city,
                     availability: driver.availability,
-                    lat: driver.location.lat,
-                    lng: driver.location.lng,
-                    lastSeenAt: driver.location.lastSeenAt,
+                    lat: driver.location?.lat ?? null,
+                    lng: driver.location?.lng ?? null,
+                    lastSeenAt: driver.location?.lastSeenAt ?? null,
                 },
                 trips: ranked,
             };
@@ -296,183 +387,54 @@ let TripsService = class TripsService {
             return { ok: false, message: prismaErrMessage(e) };
         }
     }
-    async cancel(user, tripId, body) {
-        try {
-            const trip = await this.prisma.trip.findUnique({
-                where: { id: tripId },
-            });
-            if (!trip)
-                return { ok: false, message: "Trip not found" };
-            if (trip.status === client_1.TripStatus.COMPLETED) {
-                return { ok: false, message: "Completed trip cannot be cancelled" };
-            }
-            if (trip.status === client_1.TripStatus.CANCELLED) {
-                return { ok: false, message: "Trip is already cancelled" };
-            }
-            const reason = body?.reason?.trim() || null;
-            const actorRole = user.role;
-            const actorUserId = user.sub;
-            const result = await this.prisma.$transaction(async (tx) => {
-                const latest = await tx.trip.findUnique({
-                    where: { id: tripId },
-                });
-                if (!latest)
-                    return { ok: false, message: "Trip not found" };
-                if (latest.status === client_1.TripStatus.COMPLETED) {
-                    return { ok: false, message: "Completed trip cannot be cancelled" };
-                }
-                if (latest.status === client_1.TripStatus.CANCELLED) {
-                    return { ok: false, message: "Trip is already cancelled" };
-                }
-                let cancelledBy;
-                if (actorRole === "RIDER") {
-                    if (latest.riderId !== actorUserId) {
-                        return { ok: false, message: "Not your trip" };
-                    }
-                    if (latest.driverId) {
-                        return { ok: false, message: "Rider can only cancel before driver accepts" };
-                    }
-                    if (latest.status !== client_1.TripStatus.REQUESTED) {
-                        return { ok: false, message: "Rider can only cancel REQUESTED trips" };
-                    }
-                    cancelledBy = "RIDER";
-                }
-                else if (actorRole === "DRIVER") {
-                    const driver = await tx.driver.findUnique({
-                        where: { userId: actorUserId },
-                    });
-                    if (!driver) {
-                        return { ok: false, message: "Driver profile not found" };
-                    }
-                    if (latest.driverId !== driver.id) {
-                        return { ok: false, message: "Trip is not assigned to this driver" };
-                    }
-                    if (latest.status !== client_1.TripStatus.ACCEPTED && latest.status !== client_1.TripStatus.STARTED) {
-                        return {
-                            ok: false,
-                            message: "Driver can only cancel ACCEPTED or STARTED trips",
-                        };
-                    }
-                    cancelledBy = "DRIVER";
-                    await tx.driver.update({
-                        where: { id: driver.id },
-                        data: {
-                            availability: "ONLINE",
-                        },
-                    });
-                }
-                else if (actorRole === "ADMIN") {
-                    cancelledBy = "ADMIN";
-                    if (latest.driverId) {
-                        await tx.driver.update({
-                            where: { id: latest.driverId },
-                            data: {
-                                availability: "ONLINE",
-                            },
-                        }).catch(() => null);
-                    }
-                }
-                else {
-                    return { ok: false, message: "Role not allowed to cancel trip" };
-                }
-                const cancelledTrip = await tx.trip.update({
-                    where: { id: tripId },
-                    data: {
-                        status: client_1.TripStatus.CANCELLED,
-                        cancelledBy,
-                        cancelReason: reason,
-                        cancelledAt: new Date(),
-                    },
-                    include: { rider: true, driver: true, delivery: true, fare: true },
-                });
-                return { ok: true, trip: cancelledTrip };
-            });
-            return result;
-        }
-        catch (e) {
-            return { ok: false, message: prismaErrMessage(e) };
-        }
-    }
     async accept(user, tripId) {
         try {
-            const driver = await this.prisma.driver.findUnique({ where: { userId: user.sub } });
-            if (!driver)
-                return { ok: false, message: "Driver profile not found" };
-            if (driver.kycStatus !== "APPROVED")
-                return { ok: false, message: "KYC not approved" };
-            if (driver.availability === "SUSPENDED")
-                return { ok: false, message: "Driver is suspended" };
-            if (driver.availability !== "ONLINE")
-                return { ok: false, message: "Driver is not ONLINE" };
-            const result = await this.prisma.$transaction(async (tx) => {
-                const latestDriver = await tx.driver.findUnique({ where: { id: driver.id } });
-                if (!latestDriver)
-                    return { ok: false, message: "Driver profile not found" };
-                if (latestDriver.kycStatus !== "APPROVED") {
-                    return { ok: false, message: "KYC not approved" };
-                }
-                if (latestDriver.availability !== "ONLINE") {
-                    return { ok: false, message: "Driver is not available to accept trips" };
-                }
-                const trip = await tx.trip.findUnique({ where: { id: tripId } });
-                if (!trip)
-                    return { ok: false, message: "Trip not found" };
-                if (trip.status !== client_1.TripStatus.REQUESTED || trip.driverId) {
-                    return { ok: false, message: "Trip is no longer available" };
-                }
-                if (trip.city !== latestDriver.city) {
-                    return { ok: false, message: "Trip city mismatch" };
-                }
-                if (!serviceTypeMatchesDriver(latestDriver.driverType, trip.serviceType)) {
-                    return { ok: false, message: "Service type does not match driver type" };
-                }
-                const claimed = await tx.trip.update({
-                    where: { id: tripId },
-                    data: {
-                        driverId: latestDriver.id,
-                        status: client_1.TripStatus.ACCEPTED,
-                        matchedAt: new Date(),
-                        acceptedAt: new Date(),
-                    },
-                    include: { rider: true, driver: true, delivery: true },
-                });
-                await tx.driver.update({
-                    where: { id: latestDriver.id },
-                    data: {
-                        availability: "ON_TRIP",
-                    },
-                });
-                return { ok: true, trip: claimed };
+            const driver = await this.prisma.driver.findUnique({
+                where: { userId: user.sub },
             });
-            return result;
-        }
-        catch (e) {
-            return { ok: false, message: prismaErrMessage(e) };
-        }
-    }
-    async start(user, tripId) {
-        try {
-            const driver = await this.prisma.driver.findUnique({ where: { userId: user.sub } });
-            if (!driver)
+            if (!driver) {
                 return { ok: false, message: "Driver profile not found" };
-            const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
-            if (!trip)
+            }
+            if (driver.kycStatus !== "APPROVED") {
+                return { ok: false, message: "KYC not approved" };
+            }
+            if (driver.availability !== "ONLINE") {
+                return { ok: false, message: "Driver is not ONLINE" };
+            }
+            const trip = await this.prisma.trip.findUnique({
+                where: { id: tripId },
+                include: { rider: true, delivery: true, fare: true },
+            });
+            if (!trip) {
                 return { ok: false, message: "Trip not found" };
-            if (trip.driverId !== driver.id)
-                return { ok: false, message: "Not assigned to this driver" };
-            if (trip.status !== client_1.TripStatus.ACCEPTED) {
-                return { ok: false, message: "Trip must be ACCEPTED first" };
             }
-            if (trip.paymentMode === client_1.PaymentMode.PREPAID) {
-                const payment = await this.prisma.payment.findUnique({ where: { tripId: trip.id } });
-                if (!payment || payment.status !== client_1.PaymentStatus.PAID) {
-                    return { ok: false, message: "Payment required before starting this trip" };
-                }
+            if (trip.status !== client_1.TripStatus.REQUESTED) {
+                return { ok: false, message: "Trip is not REQUESTED" };
             }
+            if (trip.driverId) {
+                return { ok: false, message: "Trip has already been accepted" };
+            }
+            if (trip.city !== driver.city) {
+                return { ok: false, message: "Trip city does not match driver city" };
+            }
+            if (!serviceTypeMatchesDriver(driver.driverType, trip.serviceType)) {
+                return { ok: false, message: "Trip serviceType does not match driver type" };
+            }
+            const now = new Date();
             const updated = await this.prisma.trip.update({
                 where: { id: tripId },
-                data: { status: client_1.TripStatus.STARTED, startedAt: new Date() },
-                include: { delivery: true },
+                data: {
+                    driverId: driver.id,
+                    status: client_1.TripStatus.ACCEPTED,
+                    matchedAt: now,
+                    acceptedAt: now,
+                },
+                include: {
+                    rider: true,
+                    driver: true,
+                    delivery: true,
+                    fare: true,
+                },
             });
             return { ok: true, trip: updated };
         }
@@ -480,140 +442,161 @@ let TripsService = class TripsService {
             return { ok: false, message: prismaErrMessage(e) };
         }
     }
-    async complete(user, tripId, body) {
+    async start(user, tripId) {
         try {
-            const driver = await this.prisma.driver.findUnique({ where: { userId: user.sub } });
-            if (!driver)
+            const driver = await this.prisma.driver.findUnique({
+                where: { userId: user.sub },
+            });
+            if (!driver) {
                 return { ok: false, message: "Driver profile not found" };
-            const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
-            if (!trip)
-                return { ok: false, message: "Trip not found" };
-            if (trip.driverId !== driver.id)
-                return { ok: false, message: "Not assigned to this driver" };
-            if (trip.status === client_1.TripStatus.COMPLETED) {
-                const existingFare = await this.prisma.tripFare.findUnique({ where: { tripId } });
-                return { ok: true, trip, fare: existingFare, walletUpdated: false, alreadyCompleted: true };
             }
-            if (trip.status !== client_1.TripStatus.STARTED)
-                return { ok: false, message: "Trip must be STARTED first" };
-            const rawDistance = body?.distanceKmEst ?? trip.distanceKmEst ?? null;
-            const rawDuration = body?.durationMinEst ?? trip.durationMinEst ?? null;
-            let distanceKmEst = Number(rawDistance);
-            let durationMinEst = Number(rawDuration);
-            if (!Number.isFinite(distanceKmEst) || distanceKmEst <= 0)
-                distanceKmEst = 1;
-            if (!Number.isFinite(durationMinEst) || durationMinEst <= 0)
-                durationMinEst = 5;
-            const result = await this.prisma.$transaction(async (tx) => {
-                const latest = await tx.trip.findUnique({ where: { id: tripId } });
-                if (!latest)
-                    throw new Error("Trip not found");
-                if (latest.status === client_1.TripStatus.COMPLETED) {
-                    const existingFare = await tx.tripFare.findUnique({ where: { tripId } });
-                    return { trip: latest, fare: existingFare, walletUpdated: false, alreadyCompleted: true };
-                }
-                if (latest.status !== client_1.TripStatus.STARTED) {
-                    throw new Error("Trip must be STARTED first");
-                }
-                if (latest.driverId !== driver.id) {
-                    throw new Error("Not assigned to this driver");
-                }
-                const completedTrip = await tx.trip.update({
-                    where: { id: tripId },
-                    data: {
-                        status: client_1.TripStatus.COMPLETED,
-                        completedAt: new Date(),
-                        distanceKmEst,
-                        durationMinEst,
-                    },
+            const trip = await this.prisma.trip.findUnique({
+                where: { id: tripId },
+                include: { rider: true, driver: true, delivery: true, fare: true },
+            });
+            if (!trip) {
+                return { ok: false, message: "Trip not found" };
+            }
+            if (trip.driverId !== driver.id) {
+                return { ok: false, message: "This trip is not assigned to this driver" };
+            }
+            if (trip.status !== client_1.TripStatus.ACCEPTED) {
+                return { ok: false, message: "Trip must be ACCEPTED before START" };
+            }
+            const updated = await this.prisma.trip.update({
+                where: { id: tripId },
+                data: {
+                    status: client_1.TripStatus.STARTED,
+                    startedAt: new Date(),
+                },
+                include: {
+                    rider: true,
+                    driver: true,
+                    delivery: true,
+                    fare: true,
+                },
+            });
+            return { ok: true, trip: updated };
+        }
+        catch (e) {
+            return { ok: false, message: prismaErrMessage(e) };
+        }
+    }
+    async complete(user, tripId) {
+        try {
+            const driver = await this.prisma.driver.findUnique({
+                where: { userId: user.sub },
+            });
+            if (!driver) {
+                return { ok: false, message: "Driver profile not found" };
+            }
+            const trip = await this.prisma.trip.findUnique({
+                where: { id: tripId },
+                include: {
+                    fare: true,
+                    rider: true,
+                    driver: true,
+                    delivery: true,
+                },
+            });
+            if (!trip) {
+                return { ok: false, message: "Trip not found" };
+            }
+            if (trip.driverId !== driver.id) {
+                return { ok: false, message: "This trip is not assigned to this driver" };
+            }
+            if (trip.status === client_1.TripStatus.COMPLETED) {
+                return { ok: true, trip };
+            }
+            if (trip.status !== client_1.TripStatus.STARTED) {
+                return { ok: false, message: "Trip must be STARTED before COMPLETE" };
+            }
+            const policy = await this.prisma.farePolicy.findFirst({
+                where: {
+                    city: trip.city,
+                    serviceType: trip.serviceType,
+                    isActive: true,
+                },
+            });
+            if (!policy) {
+                return { ok: false, message: "Fare policy not found" };
+            }
+            const distanceKm = trip.distanceKmEst ?? 2;
+            const durationMin = trip.durationMinEst ?? 10;
+            const fareData = (0, fare_1.computeFare)(policy, distanceKm, durationMin);
+            await this.prisma.$transaction(async (tx) => {
+                const existingFare = await tx.tripFare.findUnique({
+                    where: { tripId: trip.id },
                 });
-                const existingFare = await tx.tripFare.findUnique({ where: { tripId } });
-                if (existingFare) {
-                    await tx.driver.update({
-                        where: { id: driver.id },
+                if (!existingFare) {
+                    await tx.tripFare.create({
                         data: {
-                            availability: "ONLINE",
+                            tripId: trip.id,
+                            currency: fareData.currency,
+                            baseFare: fareData.baseFare,
+                            perKmFare: fareData.perKmFare,
+                            perMinFare: fareData.perMinFare,
+                            bookingFee: fareData.bookingFee,
+                            discount: fareData.discount,
+                            totalAmount: fareData.totalAmount,
+                            platformEarning: fareData.platformEarning,
+                            driverEarning: fareData.driverEarning,
+                            distanceKm,
+                            durationMin,
                         },
                     });
-                    return { trip: completedTrip, fare: existingFare, walletUpdated: false, alreadyCompleted: true };
                 }
-                const policy = await tx.farePolicy.findFirst({
-                    where: { city: completedTrip.city, serviceType: completedTrip.serviceType, isActive: true },
-                    orderBy: { createdAt: "desc" },
-                });
-                if (!policy)
-                    throw new Error(`No active FarePolicy for ${completedTrip.city} / ${completedTrip.serviceType}`);
-                const fareCalc = (0, fare_1.computeFare)(policy, distanceKmEst, durationMinEst);
-                const fare = await tx.tripFare.create({
-                    data: {
-                        tripId,
-                        currency: fareCalc.currency,
-                        baseFare: fareCalc.baseFare,
-                        perKmFare: fareCalc.perKmFare,
-                        perMinFare: fareCalc.perMinFare,
-                        bookingFee: fareCalc.bookingFee,
-                        discount: fareCalc.discount,
-                        totalAmount: fareCalc.totalAmount,
-                        platformEarning: fareCalc.platformEarning,
-                        driverEarning: fareCalc.driverEarning,
-                        distanceKm: distanceKmEst,
-                        durationMin: durationMinEst,
+                const wallet = await tx.driverWallet.upsert({
+                    where: { driverId: driver.id },
+                    update: {},
+                    create: {
+                        driverId: driver.id,
+                        balance: 0,
                     },
                 });
                 const existingTx = await tx.walletTransaction.findFirst({
-                    where: { tripId, driverId: driver.id, type: "CREDIT", reason: "TRIP_EARNING" },
+                    where: {
+                        driverId: driver.id,
+                        tripId: trip.id,
+                        reason: client_1.WalletTxReason.TRIP_EARNING,
+                    },
                 });
-                let walletUpdated = false;
                 if (!existingTx) {
-                    await tx.driverWallet.upsert({
-                        where: { driverId: driver.id },
-                        create: { driverId: driver.id, balance: 0 },
-                        update: {},
-                    });
                     await tx.driverWallet.update({
-                        where: { driverId: driver.id },
-                        data: { balance: { increment: fareCalc.driverEarning } },
+                        where: { driverId: wallet.driverId },
+                        data: {
+                            balance: { increment: fareData.driverEarning },
+                        },
                     });
                     await tx.walletTransaction.create({
                         data: {
                             driverId: driver.id,
-                            tripId,
-                            type: "CREDIT",
-                            reason: "TRIP_EARNING",
-                            amount: fareCalc.driverEarning,
-                            note: `Trip earning for ${tripId} (platform=${fareCalc.platformEarning})`,
+                            tripId: trip.id,
+                            type: client_1.WalletTxType.CREDIT,
+                            reason: client_1.WalletTxReason.TRIP_EARNING,
+                            amount: fareData.driverEarning,
+                            note: `Trip earning for ${trip.id} (platform=${fareData.platformEarning})`,
                         },
                     });
-                    walletUpdated = true;
                 }
-                await tx.driver.update({
-                    where: { id: driver.id },
+                await tx.trip.update({
+                    where: { id: trip.id },
                     data: {
-                        availability: "ONLINE",
+                        status: client_1.TripStatus.COMPLETED,
+                        completedAt: new Date(),
                     },
                 });
-                await tx.auditLog
-                    .create({
-                    data: {
-                        adminUserId: user.sub,
-                        action: "TRIP_COMMISSION_RECORDED",
-                        entityType: "Trip",
-                        entityId: tripId,
-                        metadata: {
-                            totalAmount: fareCalc.totalAmount,
-                            driverEarning: fareCalc.driverEarning,
-                            platformEarning: fareCalc.platformEarning,
-                            currency: fareCalc.currency,
-                            distanceKmEst,
-                            durationMinEst,
-                            walletUpdated,
-                        },
-                    },
-                })
-                    .catch(() => null);
-                return { trip: completedTrip, fare, walletUpdated, alreadyCompleted: false };
             });
-            return { ok: true, ...result };
+            const updatedTrip = await this.prisma.trip.findUnique({
+                where: { id: trip.id },
+                include: {
+                    fare: true,
+                    rider: true,
+                    driver: true,
+                    delivery: true,
+                },
+            });
+            return { ok: true, trip: updatedTrip };
         }
         catch (e) {
             return { ok: false, message: prismaErrMessage(e) };

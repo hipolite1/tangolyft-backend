@@ -149,7 +149,7 @@ let TripsService = class TripsService {
             const data = {
                 serviceType: dto.serviceType,
                 city: dto.city ?? "ABUJA",
-                riderId: user.sub,
+                riderId: rider.id,
                 pickupAddress: dto.pickupAddress,
                 pickupLat: dto.pickupLat,
                 pickupLng: dto.pickupLng,

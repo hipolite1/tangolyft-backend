@@ -16,6 +16,10 @@ class RequestTripDto {
 }
 exports.RequestTripDto = RequestTripDto;
 __decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], RequestTripDto.prototype, "phone", void 0);
+__decorate([
     (0, class_validator_1.IsEnum)(client_1.ServiceType),
     __metadata("design:type", String)
 ], RequestTripDto.prototype, "serviceType", void 0);

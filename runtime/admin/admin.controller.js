@@ -24,8 +24,29 @@ let AdminController = class AdminController {
     async pendingDrivers() {
         return this.adminService.pendingDrivers();
     }
+    async approvedDrivers() {
+        return this.adminService.approvedDrivers();
+    }
+    async trips() {
+        return this.adminService.listTrips();
+    }
+    async tripDetail(tripId) {
+        return this.adminService.getTripDetail(tripId);
+    }
     async waiveCommitment(tripId, user, body) {
         return this.adminService.waiveCommitment(tripId, user, body);
+    }
+    async assignDriver(tripId, body) {
+        return this.adminService.assignDriver(tripId, body.driverName);
+    }
+    async startTrip(tripId) {
+        return this.adminService.startTrip(tripId);
+    }
+    async completeTrip(tripId) {
+        return this.adminService.completeTrip(tripId);
+    }
+    async cancelTrip(tripId, body, user) {
+        return this.adminService.cancelTrip(tripId, body?.reason || "Cancelled by admin", user?.sub);
     }
     async approve(driverId, user) {
         return this.adminService.approveDriver(driverId, user);
@@ -50,6 +71,28 @@ __decorate([
 ], AdminController.prototype, "pendingDrivers", null);
 __decorate([
     (0, require_role_1.RequireRole)("ADMIN"),
+    (0, common_1.Get)("drivers/approved"),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "approvedDrivers", null);
+__decorate([
+    (0, require_role_1.RequireRole)("ADMIN"),
+    (0, common_1.Get)("trips"),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "trips", null);
+__decorate([
+    (0, require_role_1.RequireRole)("ADMIN"),
+    (0, common_1.Get)("trips/:tripId"),
+    __param(0, (0, common_1.Param)("tripId")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "tripDetail", null);
+__decorate([
+    (0, require_role_1.RequireRole)("ADMIN"),
     (0, common_1.Post)("trips/:tripId/waive-commitment"),
     __param(0, (0, common_1.Param)("tripId")),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
@@ -58,6 +101,41 @@ __decorate([
     __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "waiveCommitment", null);
+__decorate([
+    (0, require_role_1.RequireRole)("ADMIN"),
+    (0, common_1.Post)("trips/:tripId/assign-driver"),
+    __param(0, (0, common_1.Param)("tripId")),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "assignDriver", null);
+__decorate([
+    (0, require_role_1.RequireRole)("ADMIN"),
+    (0, common_1.Post)("trips/:tripId/start"),
+    __param(0, (0, common_1.Param)("tripId")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "startTrip", null);
+__decorate([
+    (0, require_role_1.RequireRole)("ADMIN"),
+    (0, common_1.Post)("trips/:tripId/complete"),
+    __param(0, (0, common_1.Param)("tripId")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "completeTrip", null);
+__decorate([
+    (0, require_role_1.RequireRole)("ADMIN"),
+    (0, common_1.Post)("trips/:tripId/cancel"),
+    __param(0, (0, common_1.Param)("tripId")),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "cancelTrip", null);
 __decorate([
     (0, require_role_1.RequireRole)("ADMIN"),
     (0, common_1.Post)("drivers/:driverId/approve"),
