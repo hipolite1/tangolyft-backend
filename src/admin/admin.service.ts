@@ -3,7 +3,13 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { CommitmentStatus, Prisma } from "@prisma/client";
+import {
+  CommitmentStatus,
+  PayoutStatus,
+  Prisma,
+  WalletTxReason,
+  WalletTxType,
+} from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
@@ -47,6 +53,140 @@ export class AdminService {
     });
 
     return { ok: true, trips };
+  }
+  async pendingPayouts() {
+    const payouts = await this.prisma.payout.findMany({
+      where: {
+        status: {
+          in: [PayoutStatus.PENDING, PayoutStatus.PROCESSING],
+        },
+      },
+      include: {
+        driver: {
+          include: {
+            user: true,
+            wallet: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return { ok: true, payouts };
+  }
+
+  async markPayoutPaid(payoutId: string, user: any) {
+    if (!payoutId || payoutId.length < 10) {
+      throw new BadRequestException("Invalid payoutId");
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const payout = await tx.payout.findUnique({
+        where: { id: payoutId },
+        include: {
+          driver: {
+            include: {
+              user: true,
+              wallet: true,
+            },
+          },
+        },
+      });
+
+      if (!payout) {
+        throw new NotFoundException("Payout not found");
+      }
+
+      if (payout.status === PayoutStatus.PAID) {
+        return {
+          alreadyPaid: true,
+          payout,
+        };
+      }
+
+      if (
+        payout.status !== PayoutStatus.PENDING &&
+        payout.status !== PayoutStatus.PROCESSING
+      ) {
+        throw new BadRequestException(
+          `Cannot mark payout as paid from status ${payout.status}`,
+        );
+      }
+
+      if (!payout.driver.wallet) {
+        throw new BadRequestException("Driver wallet not found");
+      }
+
+      if (payout.driver.wallet.balance < payout.amount) {
+        throw new BadRequestException(
+          "Driver wallet balance is lower than payout amount",
+        );
+      }
+
+      await tx.driverWallet.update({
+        where: { driverId: payout.driverId },
+        data: {
+          balance: {
+            decrement: payout.amount,
+          },
+        },
+      });
+
+      await tx.walletTransaction.create({
+        data: {
+          driverId: payout.driverId,
+          type: WalletTxType.DEBIT,
+          reason: WalletTxReason.PAYOUT,
+          amount: payout.amount,
+          note: `Manual payout paid by admin for payout ${payout.id}`,
+        },
+      });
+
+      const updatedPayout = await tx.payout.update({
+        where: { id: payout.id },
+        data: {
+          status: PayoutStatus.PAID,
+          paidAt: new Date(),
+        },
+        include: {
+          driver: {
+            include: {
+              user: true,
+              wallet: true,
+            },
+          },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          adminUserId: user.sub,
+          action: "PAYOUT_MARKED_PAID",
+          entityType: "Payout",
+          entityId: payout.id,
+          metadata: {
+            driverId: payout.driverId,
+            amount: payout.amount,
+            schedule: payout.schedule,
+          },
+        },
+      });
+
+      return {
+        alreadyPaid: false,
+        payout: updatedPayout,
+      };
+    });
+
+    return {
+      ok: true,
+      message: result.alreadyPaid
+        ? "Payout was already marked as paid"
+        : "Payout marked as paid and driver wallet debited",
+      payout: result.payout,
+    };
   }
 
   async getTripDetail(tripId: string) {

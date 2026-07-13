@@ -30,6 +30,12 @@ let AdminController = class AdminController {
     async trips() {
         return this.adminService.listTrips();
     }
+    async pendingPayouts() {
+        return this.adminService.pendingPayouts();
+    }
+    async markPayoutPaid(payoutId, user) {
+        return this.adminService.markPayoutPaid(payoutId, user);
+    }
     async tripDetail(tripId) {
         return this.adminService.getTripDetail(tripId);
     }
@@ -83,6 +89,22 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "trips", null);
+__decorate([
+    (0, require_role_1.RequireRole)("ADMIN"),
+    (0, common_1.Get)("payouts/pending"),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "pendingPayouts", null);
+__decorate([
+    (0, require_role_1.RequireRole)("ADMIN"),
+    (0, common_1.Post)("payouts/:payoutId/mark-paid"),
+    __param(0, (0, common_1.Param)("payoutId")),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "markPayoutPaid", null);
 __decorate([
     (0, require_role_1.RequireRole)("ADMIN"),
     (0, common_1.Get)("trips/:tripId"),

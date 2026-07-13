@@ -50,6 +50,120 @@ let AdminService = class AdminService {
         });
         return { ok: true, trips };
     }
+    async pendingPayouts() {
+        const payouts = await this.prisma.payout.findMany({
+            where: {
+                status: {
+                    in: [client_1.PayoutStatus.PENDING, client_1.PayoutStatus.PROCESSING],
+                },
+            },
+            include: {
+                driver: {
+                    include: {
+                        user: true,
+                        wallet: true,
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: "desc",
+            },
+        });
+        return { ok: true, payouts };
+    }
+    async markPayoutPaid(payoutId, user) {
+        if (!payoutId || payoutId.length < 10) {
+            throw new common_1.BadRequestException("Invalid payoutId");
+        }
+        const result = await this.prisma.$transaction(async (tx) => {
+            const payout = await tx.payout.findUnique({
+                where: { id: payoutId },
+                include: {
+                    driver: {
+                        include: {
+                            user: true,
+                            wallet: true,
+                        },
+                    },
+                },
+            });
+            if (!payout) {
+                throw new common_1.NotFoundException("Payout not found");
+            }
+            if (payout.status === client_1.PayoutStatus.PAID) {
+                return {
+                    alreadyPaid: true,
+                    payout,
+                };
+            }
+            if (payout.status !== client_1.PayoutStatus.PENDING &&
+                payout.status !== client_1.PayoutStatus.PROCESSING) {
+                throw new common_1.BadRequestException(`Cannot mark payout as paid from status ${payout.status}`);
+            }
+            if (!payout.driver.wallet) {
+                throw new common_1.BadRequestException("Driver wallet not found");
+            }
+            if (payout.driver.wallet.balance < payout.amount) {
+                throw new common_1.BadRequestException("Driver wallet balance is lower than payout amount");
+            }
+            await tx.driverWallet.update({
+                where: { driverId: payout.driverId },
+                data: {
+                    balance: {
+                        decrement: payout.amount,
+                    },
+                },
+            });
+            await tx.walletTransaction.create({
+                data: {
+                    driverId: payout.driverId,
+                    type: client_1.WalletTxType.DEBIT,
+                    reason: client_1.WalletTxReason.PAYOUT,
+                    amount: payout.amount,
+                    note: `Manual payout paid by admin for payout ${payout.id}`,
+                },
+            });
+            const updatedPayout = await tx.payout.update({
+                where: { id: payout.id },
+                data: {
+                    status: client_1.PayoutStatus.PAID,
+                    paidAt: new Date(),
+                },
+                include: {
+                    driver: {
+                        include: {
+                            user: true,
+                            wallet: true,
+                        },
+                    },
+                },
+            });
+            await tx.auditLog.create({
+                data: {
+                    adminUserId: user.sub,
+                    action: "PAYOUT_MARKED_PAID",
+                    entityType: "Payout",
+                    entityId: payout.id,
+                    metadata: {
+                        driverId: payout.driverId,
+                        amount: payout.amount,
+                        schedule: payout.schedule,
+                    },
+                },
+            });
+            return {
+                alreadyPaid: false,
+                payout: updatedPayout,
+            };
+        });
+        return {
+            ok: true,
+            message: result.alreadyPaid
+                ? "Payout was already marked as paid"
+                : "Payout marked as paid and driver wallet debited",
+            payout: result.payout,
+        };
+    }
     async getTripDetail(tripId) {
         if (!tripId || tripId.length < 10) {
             throw new common_1.BadRequestException("Invalid tripId");

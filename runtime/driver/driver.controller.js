@@ -23,7 +23,7 @@ let DriverController = class DriverController {
         this.prisma = prisma;
     }
     async apply(body) {
-        const { fullName, phone, email, city, vehicleType, } = body || {};
+        const { fullName, phone, email, city, vehicleType } = body || {};
         if (!fullName || !phone || !city || !vehicleType) {
             return {
                 ok: false,
@@ -85,8 +85,9 @@ let DriverController = class DriverController {
         const driver = await this.prisma.driver.findUnique({
             where: { userId: user.sub },
         });
-        if (!driver)
+        if (!driver) {
             return { ok: false, message: "Driver profile not found" };
+        }
         if (driver.kycStatus !== "APPROVED") {
             return { ok: false, message: "KYC not approved yet" };
         }
@@ -100,13 +101,78 @@ let DriverController = class DriverController {
         const driver = await this.prisma.driver.findUnique({
             where: { userId: user.sub },
         });
-        if (!driver)
+        if (!driver) {
             return { ok: false, message: "Driver profile not found" };
+        }
         const updated = await this.prisma.driver.update({
             where: { id: driver.id },
             data: { availability: "OFFLINE" },
         });
         return { ok: true, driver: updated };
+    }
+    async requestCashout(user, body) {
+        const amount = Number(body?.amount);
+        if (!Number.isInteger(amount) || amount <= 0) {
+            return {
+                ok: false,
+                message: "A valid cashout amount is required",
+            };
+        }
+        const driver = await this.prisma.driver.findUnique({
+            where: { userId: user.sub },
+            include: {
+                wallet: true,
+            },
+        });
+        if (!driver) {
+            return { ok: false, message: "Driver profile not found" };
+        }
+        if (!driver.wallet) {
+            return {
+                ok: false,
+                message: "Driver wallet not found. Complete a trip first.",
+            };
+        }
+        const pendingPayouts = await this.prisma.payout.aggregate({
+            where: {
+                driverId: driver.id,
+                status: {
+                    in: ["PENDING", "PROCESSING"],
+                },
+            },
+            _sum: {
+                amount: true,
+            },
+        });
+        const walletBalance = driver.wallet.balance || 0;
+        const pendingAmount = pendingPayouts._sum.amount || 0;
+        const availableBalance = walletBalance - pendingAmount;
+        if (amount > availableBalance) {
+            return {
+                ok: false,
+                message: "Insufficient available balance for cashout",
+                walletBalance,
+                pendingAmount,
+                availableBalance,
+            };
+        }
+        const payout = await this.prisma.payout.create({
+            data: {
+                driverId: driver.id,
+                schedule: "MANUAL_REQUEST",
+                amount,
+                status: "PENDING",
+            },
+        });
+        return {
+            ok: true,
+            message: "Cashout request submitted for admin review",
+            payout,
+            walletBalance,
+            pendingAmount,
+            availableBalanceBeforeRequest: availableBalance,
+            availableBalanceAfterRequest: availableBalance - amount,
+        };
     }
     async updateLocation(user, body) {
         const driver = await this.prisma.driver.findUnique({
@@ -178,6 +244,15 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], DriverController.prototype, "goOffline", null);
+__decorate([
+    (0, require_role_1.RequireRole)("DRIVER", "ADMIN"),
+    (0, common_1.Post)("cashout-request"),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], DriverController.prototype, "requestCashout", null);
 __decorate([
     (0, require_role_1.RequireRole)("DRIVER", "ADMIN"),
     (0, common_1.Patch)("location"),

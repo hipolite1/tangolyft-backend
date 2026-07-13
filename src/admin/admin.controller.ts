@@ -30,6 +30,20 @@ export class AdminController {
   async trips() {
     return this.adminService.listTrips();
   }
+  @RequireRole("ADMIN")
+  @Get("payouts/pending")
+  async pendingPayouts() {
+    return this.adminService.pendingPayouts();
+  }
+
+  @RequireRole("ADMIN")
+  @Post("payouts/:payoutId/mark-paid")
+  async markPayoutPaid(
+    @Param("payoutId") payoutId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.adminService.markPayoutPaid(payoutId, user);
+  }
 
   @RequireRole("ADMIN")
   @Get("trips/:tripId")
