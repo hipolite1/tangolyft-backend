@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TangoLyft Admin - Payouts</title>
+  <link rel="stylesheet" href="./admin.css" />
+</head>
+<body data-page="payouts">
+  <div class="admin-layout">
+    <aside class="sidebar">
+      <div class="brand">TangoLyft Admin</div>
+      <nav class="nav">
+        <a href="./pending-drivers.html">Pending Drivers</a>
+        <a href="./approved-drivers.html">Approved Drivers</a>
+        <a href="./trips.html">Trips</a>
+        <a href="./payouts.html" class="active">Payouts</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <div class="page-header">
+        <h1>Driver Cashout Requests</h1>
+        <div class="row gap">
+          <button id="refreshBtn" class="btn">Refresh</button>
+          <button id="logoutBtn" class="btn danger">Logout</button>
+        </div>
+      </div>
+
+      <div id="status" class="status info"></div>
+
+      <div class="card">
+        <div id="emptyState" class="empty-state" style="display: none;">
+          No pending cashout requests.
+        </div>
+
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Payout ID</th>
+              <th>Driver Phone</th>
+              <th>Driver Name</th>
+              <th>Amount</th>
+              <th>Wallet Balance</th>
+              <th>Status</th>
+              <th>Requested</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="payoutsTbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script src="./admin.js"></script>
+</body>
+</html>

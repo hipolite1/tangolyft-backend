@@ -1232,6 +1232,147 @@ function initLoginPage() {
     }
   });
 }
+async function loadPayouts() {
+  const token = getAdminToken();
+  const payoutsTbody = $("payoutsTbody");
+  const emptyState = $("emptyState");
+
+  if (!token) {
+    window.location.href = "./login.html";
+    return;
+  }
+
+  if (!payoutsTbody) return;
+
+  try {
+    setStatus("Loading pending cashout requests...", "info");
+
+    const res = await fetch(`${API_BASE}/admin/payouts/pending`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data.message || "Failed to load payouts");
+    }
+
+    const payouts = data.payouts || [];
+
+    renderPayouts(payouts);
+
+    if (emptyState) {
+      emptyState.style.display = payouts.length ? "none" : "block";
+    }
+
+    setStatus(`Loaded ${payouts.length} pending cashout request(s).`, "success");
+  } catch (err) {
+    console.error(err);
+    setStatus(err.message || "Failed to load cashout requests.", "error");
+  }
+}
+
+function renderPayouts(payouts) {
+  const payoutsTbody = $("payoutsTbody");
+  if (!payoutsTbody) return;
+
+  payoutsTbody.innerHTML = "";
+
+  payouts.forEach((payout) => {
+    const driver = payout.driver || {};
+    const user = driver.user || {};
+    const wallet = driver.wallet || {};
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${escapeHtml(payout.id || "-")}</td>
+      <td>${escapeHtml(user.phone || "-")}</td>
+      <td>${escapeHtml(user.fullName || "-")}</td>
+      <td>₦${escapeHtml(payout.amount ?? "-")}</td>
+      <td>₦${escapeHtml(wallet.balance ?? "-")}</td>
+      <td>${escapeHtml(payout.status || "-")}</td>
+      <td>${escapeHtml(formatDateTime(payout.createdAt))}</td>
+      <td>
+        <button class="btn success small mark-payout-paid-btn" data-id="${escapeHtml(payout.id)}">
+          Mark Paid
+        </button>
+      </td>
+    `;
+
+    payoutsTbody.appendChild(tr);
+  });
+
+  bindPayoutActions();
+}
+
+function bindPayoutActions() {
+  document.querySelectorAll(".mark-payout-paid-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const payoutId = btn.getAttribute("data-id");
+      if (!payoutId) return;
+
+      const confirmed = window.confirm(
+        "Mark this cashout as paid? This will debit the driver's wallet.",
+      );
+
+      if (!confirmed) return;
+
+      await handleMarkPayoutPaid(payoutId);
+    });
+  });
+}
+
+async function handleMarkPayoutPaid(payoutId) {
+  const token = getAdminToken();
+
+  if (!token) {
+    window.location.href = "./login.html";
+    return;
+  }
+
+  try {
+    setStatus("Marking payout as paid...", "info");
+
+    const res = await fetch(`${API_BASE}/admin/payouts/${payoutId}/mark-paid`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data.message || "Failed to mark payout as paid");
+    }
+
+    setStatus(data.message || "Payout marked as paid.", "success");
+
+    await loadPayouts();
+  } catch (err) {
+    console.error(err);
+    setStatus(err.message || "Failed to mark payout as paid.", "error");
+  }
+}
+
+function initPayoutsPage() {
+  const refreshBtn = $("refreshBtn");
+  const logoutBtn = $("logoutBtn");
+
+  refreshBtn?.addEventListener("click", async () => {
+    await loadPayouts();
+  });
+
+  logoutBtn?.addEventListener("click", () => {
+    clearAdminSession();
+    window.location.href = "./login.html";
+  });
+
+  loadPayouts();
+}
 
 function initPendingDriversPage() {
   const refreshBtn = $("refreshBtn");
@@ -1354,7 +1495,11 @@ document.addEventListener("DOMContentLoaded", () => {
     initTripsPage();
   }
 
-  if (page === "trip-detail") {
+   if (page === "trip-detail") {
     initTripDetailPage();
+  }
+
+  if (page === "payouts") {
+    initPayoutsPage();
   }
 });
