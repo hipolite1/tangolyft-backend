@@ -8,9 +8,10 @@ import { TripsService } from "./trips.service";
 export class TripsController {
   constructor(private readonly tripsService: TripsService) {}
 
+  @RequireRole("RIDER", "ADMIN")
   @Post("request")
-  requestTrip(@Body() dto: RequestTripDto) {
-    return this.tripsService.requestTrip(null, dto);
+  requestTrip(@CurrentUser() user: any, @Body() dto: RequestTripDto) {
+    return this.tripsService.requestTrip(user, dto);
   }
 
   // MVP rider status lookup by phone.
@@ -19,7 +20,11 @@ export class TripsController {
   riderStatus(@Param("phone") phone: string) {
     return this.tripsService.riderStatus(phone);
   }
-
+  @Get("status-by-id/:tripId")
+  tripStatusById(@Param("tripId") tripId: string) {
+    return this.tripsService.tripStatusById(tripId);
+  }
+  
   @RequireRole("RIDER", "ADMIN")
   @Get("mine")
   myTrips(@CurrentUser() user: any) {

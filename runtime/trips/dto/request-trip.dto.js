@@ -25,6 +25,11 @@ __decorate([
 ], RequestTripDto.prototype, "serviceType", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(client_1.PaymentMode),
+    __metadata("design:type", String)
+], RequestTripDto.prototype, "paymentMode", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], RequestTripDto.prototype, "city", void 0);

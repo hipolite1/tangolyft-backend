@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import {
   CommitmentStatus,
+  PaymentMode,
   Prisma,
   ServiceType,
   TripStatus,
@@ -161,13 +162,21 @@ export class TripsService {
       if (!dto?.serviceType) {
         return { ok: false, message: "serviceType is required" };
       }
-      if (!dto?.phone) {
+    if (!dto?.phone) {
   return { ok: false, message: "phone is required" };
 }
 
-let rider = await this.prisma.user.findUnique({
-  where: { phone: dto.phone },
-});
+let rider = user?.sub
+  ? await this.prisma.user.findUnique({
+      where: { id: user.sub },
+    })
+  : null;
+
+if (!rider) {
+  rider = await this.prisma.user.findUnique({
+    where: { phone: dto.phone },
+  });
+}
 
 if (!rider) {
   rider = await this.prisma.user.create({
@@ -200,9 +209,28 @@ if (!rider) {
         };
       }
 
+      const city = dto.city ?? "ABUJA";
+      const distanceKm = dto.distanceKmEst ?? 2;
+      const durationMin = dto.durationMinEst ?? 10;
+      const paymentMode = dto.paymentMode ?? PaymentMode.PAY_ON_DROPOFF;
+
+      const policy = await this.prisma.farePolicy.findFirst({
+        where: {
+          city: city as any,
+          serviceType: dto.serviceType,
+          isActive: true,
+        },
+      });
+
+      if (!policy) {
+        return { ok: false, message: "Fare policy not found" };
+      }
+
+      const fareData = computeFare(policy, distanceKm, durationMin);
+
       const data: any = {
         serviceType: dto.serviceType,
-        city: dto.city ?? "ABUJA",
+        city,
         riderId: rider.id,
 
         pickupAddress: dto.pickupAddress,
@@ -213,11 +241,31 @@ if (!rider) {
         dropoffLat: dto.dropoffLat,
         dropoffLng: dto.dropoffLng,
 
-        distanceKmEst: dto.distanceKmEst ?? null,
-        durationMinEst: dto.durationMinEst ?? null,
+        distanceKmEst: distanceKm,
+        durationMinEst: durationMin,
 
         status: TripStatus.REQUESTED,
-        commitmentStatus: CommitmentStatus.WAIVED,
+        paymentMode,
+        commitmentStatus:
+          paymentMode === PaymentMode.PREPAID
+            ? CommitmentStatus.PENDING
+            : CommitmentStatus.WAIVED,
+
+        fare: {
+          create: {
+            currency: fareData.currency,
+            baseFare: fareData.baseFare,
+            perKmFare: fareData.perKmFare,
+            perMinFare: fareData.perMinFare,
+            bookingFee: fareData.bookingFee,
+            discount: fareData.discount,
+            totalAmount: fareData.totalAmount,
+            platformEarning: fareData.platformEarning,
+            driverEarning: fareData.driverEarning,
+            distanceKm,
+            durationMin,
+          },
+        },
       };
 
       if (dto.serviceType === ServiceType.BIKE_DELIVERY) {
@@ -294,8 +342,42 @@ async riderStatus(rawPhone: string) {
         },
         delivery: true,
         fare: true,
+        payment: true,
       },
     });
+
+    return {
+      ok: true,
+      trip,
+    };
+  } catch (e) {
+    return { ok: false, message: prismaErrMessage(e) };
+  }
+}
+async tripStatusById(tripId: string) {
+  try {
+    if (!tripId) {
+      return { ok: false, message: "tripId is required" };
+    }
+
+    const trip = await this.prisma.trip.findUnique({
+      where: { id: tripId },
+      include: {
+        rider: true,
+        driver: {
+          include: {
+            user: true,
+          },
+        },
+        delivery: true,
+        fare: true,
+        payment: true,
+      },
+    });
+
+    if (!trip) {
+      return { ok: false, message: "Trip not found" };
+    }
 
     return {
       ok: true,

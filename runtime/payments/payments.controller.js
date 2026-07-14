@@ -16,6 +16,7 @@ exports.PaymentsController = void 0;
 const common_1 = require("@nestjs/common");
 const payments_service_1 = require("./payments.service");
 const initialize_paystack_dto_1 = require("./dto/initialize-paystack.dto");
+const verify_paystack_dto_1 = require("./dto/verify-paystack.dto");
 const current_user_decorator_1 = require("../auth/current-user.decorator");
 const require_role_1 = require("../auth/require-role");
 let PaymentsController = class PaymentsController {
@@ -23,7 +24,16 @@ let PaymentsController = class PaymentsController {
         this.payments = payments;
     }
     async initializePaystack(user, dto) {
-        return this.payments.initializePaystack({ userId: user.sub, tripId: dto.tripId });
+        return this.payments.initializePaystack({
+            userId: user.sub,
+            tripId: dto.tripId,
+        });
+    }
+    async verifyPaystack(user, dto) {
+        return this.payments.verifyPaystack({
+            userId: user.sub,
+            reference: dto.reference,
+        });
     }
 };
 exports.PaymentsController = PaymentsController;
@@ -36,6 +46,15 @@ __decorate([
     __metadata("design:paramtypes", [Object, initialize_paystack_dto_1.InitializePaystackDto]),
     __metadata("design:returntype", Promise)
 ], PaymentsController.prototype, "initializePaystack", null);
+__decorate([
+    (0, require_role_1.RequireRole)("RIDER", "ADMIN"),
+    (0, common_1.Post)("paystack/verify"),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, verify_paystack_dto_1.VerifyPaystackDto]),
+    __metadata("design:returntype", Promise)
+], PaymentsController.prototype, "verifyPaystack", null);
 exports.PaymentsController = PaymentsController = __decorate([
     (0, common_1.Controller)("payments"),
     __metadata("design:paramtypes", [payments_service_1.PaymentsService])

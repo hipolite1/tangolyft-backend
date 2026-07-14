@@ -1,4 +1,4 @@
-import { ServiceType } from "@prisma/client";
+import { PaymentMode, ServiceType } from "@prisma/client";
 import {
   IsEnum,
   IsInt,
@@ -14,6 +14,9 @@ export class RequestTripDto {
   phone: string;
   @IsEnum(ServiceType)
   serviceType: ServiceType;
+  @IsOptional()
+  @IsEnum(PaymentMode)
+  paymentMode?: PaymentMode;
 
   @IsOptional()
   @IsString()

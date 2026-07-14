@@ -46,12 +46,7 @@ private paystackBaseUrl = process.env.PAYSTACK_BASE_URL || "https://api.paystack
       return { ok: false, message: "This trip is PAY_ON_DROPOFF. No online payment required." };
     }
 
-    // TODO: Replace with your real TripFare field name once confirmed
-    const fareNgn =
-      (trip.fare as any)?.totalFareNgn ??
-      (trip.fare as any)?.total ??
-      (trip.fare as any)?.amount ??
-      null;
+       const fareNgn = trip.fare?.totalAmount ?? null;
 
     if (!fareNgn || Number(fareNgn) <= 0) {
       return { ok: false, message: "Fare not available for this trip" };
@@ -127,13 +122,110 @@ private paystackBaseUrl = process.env.PAYSTACK_BASE_URL || "https://api.paystack
       },
     });
 
-    return {
+        return {
       ok: true,
       status: payment.status,
       reference: payment.reference,
       authorizationUrl: payment.authorizationUrl,
       amount: payment.amount,
       currency: payment.currency,
+    };
+  }
+
+  async verifyPaystack(input: { userId: string; reference: string }) {
+    this.assertConfig();
+
+    const payment = await this.prisma.payment.findUnique({
+      where: { reference: input.reference },
+      include: {
+        trip: {
+          include: {
+            rider: true,
+          },
+        },
+      },
+    });
+
+    if (!payment) {
+      return { ok: false, message: "Payment not found" };
+    }
+
+    if (payment.trip.riderId !== input.userId) {
+      return { ok: false, message: "Not your payment" };
+    }
+
+    if (payment.status === PaymentStatus.PAID) {
+      return {
+        ok: true,
+        status: "PAID",
+        message: "Payment already verified",
+        payment,
+      };
+    }
+
+    const resp = await fetch(
+      `${this.paystackBaseUrl}/transaction/verify/${encodeURIComponent(input.reference)}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${this.paystackSecret}`,
+        },
+      },
+    );
+
+    const json: any = await resp.json().catch(() => null);
+
+    if (!resp.ok || !json?.status) {
+      return {
+        ok: false,
+        message: "Paystack verification failed",
+        details: json || { status: resp.status },
+      };
+    }
+
+    const paystackStatus = json.data?.status;
+
+    if (paystackStatus !== "success") {
+      await this.prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: PaymentStatus.FAILED,
+        },
+      });
+
+      return {
+        ok: false,
+        message: "Payment was not successful",
+        paystackStatus,
+        reference: input.reference,
+      };
+    }
+
+    const updatedPayment = await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: PaymentStatus.PAID,
+        verifiedAt: new Date(),
+      },
+      include: {
+        trip: true,
+      },
+    });
+
+    await this.prisma.trip
+      .update({
+        where: { id: payment.tripId },
+        data: {
+          commitmentStatus: "CONFIRMED" as any,
+        },
+      })
+      .catch(() => null);
+
+    return {
+      ok: true,
+      status: updatedPayment.status,
+      message: "Payment verified successfully",
+      payment: updatedPayment,
     };
   }
 }

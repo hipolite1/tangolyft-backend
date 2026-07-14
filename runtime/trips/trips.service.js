@@ -144,9 +144,16 @@ let TripsService = class TripsService {
             if (!dto?.phone) {
                 return { ok: false, message: "phone is required" };
             }
-            let rider = await this.prisma.user.findUnique({
-                where: { phone: dto.phone },
-            });
+            let rider = user?.sub
+                ? await this.prisma.user.findUnique({
+                    where: { id: user.sub },
+                })
+                : null;
+            if (!rider) {
+                rider = await this.prisma.user.findUnique({
+                    where: { phone: dto.phone },
+                });
+            }
             if (!rider) {
                 rider = await this.prisma.user.create({
                     data: {
@@ -171,9 +178,24 @@ let TripsService = class TripsService {
                     message: "dropoffAddress, dropoffLat, dropoffLng are required",
                 };
             }
+            const city = dto.city ?? "ABUJA";
+            const distanceKm = dto.distanceKmEst ?? 2;
+            const durationMin = dto.durationMinEst ?? 10;
+            const paymentMode = dto.paymentMode ?? client_1.PaymentMode.PAY_ON_DROPOFF;
+            const policy = await this.prisma.farePolicy.findFirst({
+                where: {
+                    city: city,
+                    serviceType: dto.serviceType,
+                    isActive: true,
+                },
+            });
+            if (!policy) {
+                return { ok: false, message: "Fare policy not found" };
+            }
+            const fareData = (0, fare_1.computeFare)(policy, distanceKm, durationMin);
             const data = {
                 serviceType: dto.serviceType,
-                city: dto.city ?? "ABUJA",
+                city,
                 riderId: rider.id,
                 pickupAddress: dto.pickupAddress,
                 pickupLat: dto.pickupLat,
@@ -181,10 +203,28 @@ let TripsService = class TripsService {
                 dropoffAddress: dto.dropoffAddress,
                 dropoffLat: dto.dropoffLat,
                 dropoffLng: dto.dropoffLng,
-                distanceKmEst: dto.distanceKmEst ?? null,
-                durationMinEst: dto.durationMinEst ?? null,
+                distanceKmEst: distanceKm,
+                durationMinEst: durationMin,
                 status: client_1.TripStatus.REQUESTED,
-                commitmentStatus: client_1.CommitmentStatus.WAIVED,
+                paymentMode,
+                commitmentStatus: paymentMode === client_1.PaymentMode.PREPAID
+                    ? client_1.CommitmentStatus.PENDING
+                    : client_1.CommitmentStatus.WAIVED,
+                fare: {
+                    create: {
+                        currency: fareData.currency,
+                        baseFare: fareData.baseFare,
+                        perKmFare: fareData.perKmFare,
+                        perMinFare: fareData.perMinFare,
+                        bookingFee: fareData.bookingFee,
+                        discount: fareData.discount,
+                        totalAmount: fareData.totalAmount,
+                        platformEarning: fareData.platformEarning,
+                        driverEarning: fareData.driverEarning,
+                        distanceKm,
+                        durationMin,
+                    },
+                },
             };
             if (dto.serviceType === client_1.ServiceType.BIKE_DELIVERY) {
                 if (!dto.itemDescription || !dto.recipientName || !dto.recipientPhone) {
@@ -252,8 +292,40 @@ let TripsService = class TripsService {
                     },
                     delivery: true,
                     fare: true,
+                    payment: true,
                 },
             });
+            return {
+                ok: true,
+                trip,
+            };
+        }
+        catch (e) {
+            return { ok: false, message: prismaErrMessage(e) };
+        }
+    }
+    async tripStatusById(tripId) {
+        try {
+            if (!tripId) {
+                return { ok: false, message: "tripId is required" };
+            }
+            const trip = await this.prisma.trip.findUnique({
+                where: { id: tripId },
+                include: {
+                    rider: true,
+                    driver: {
+                        include: {
+                            user: true,
+                        },
+                    },
+                    delivery: true,
+                    fare: true,
+                    payment: true,
+                },
+            });
+            if (!trip) {
+                return { ok: false, message: "Trip not found" };
+            }
             return {
                 ok: true,
                 trip,
