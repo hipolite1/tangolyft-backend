@@ -1,5 +1,10 @@
 import { Injectable } from "@nestjs/common";
-import { PaymentProvider, PaymentStatus, TripStatus, PaymentMode  } from "@prisma/client";
+import {
+  PaymentMode,
+  PaymentProvider,
+  PaymentStatus,
+  TripStatus,
+} from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import crypto from "crypto";
 
@@ -7,11 +12,17 @@ import crypto from "crypto";
 export class PaymentsService {
   constructor(private prisma: PrismaService) {}
 
-private paystackBaseUrl = process.env.PAYSTACK_BASE_URL || "https://api.paystack.co";
+  private paystackBaseUrl =
+    process.env.PAYSTACK_BASE_URL || "https://api.paystack.co";
+
   private paystackSecret = process.env.PAYSTACK_SECRET_KEY || "";
 
+  private paystackCallbackUrl = process.env.PAYSTACK_CALLBACK_URL || "";
+
   private assertConfig() {
-    if (!this.paystackSecret) throw new Error("Missing PAYSTACK_SECRET_KEY");
+    if (!this.paystackSecret) {
+      throw new Error("Missing PAYSTACK_SECRET_KEY");
+    }
   }
 
   private toKobo(amountNgn: number) {
@@ -32,21 +43,36 @@ private paystackBaseUrl = process.env.PAYSTACK_BASE_URL || "https://api.paystack
 
     const trip = await this.prisma.trip.findUnique({
       where: { id: input.tripId },
-      include: { rider: true, fare: true, payment: true },
+      include: {
+        rider: true,
+        fare: true,
+        payment: true,
+      },
     });
 
-    if (!trip) return { ok: false, message: "Trip not found" };
-    if (trip.riderId !== input.userId) return { ok: false, message: "Not your trip" };
+    if (!trip) {
+      return { ok: false, message: "Trip not found" };
+    }
 
-    if (trip.status === TripStatus.CANCELLED || trip.status === TripStatus.COMPLETED) {
+    if (trip.riderId !== input.userId) {
+      return { ok: false, message: "Not your trip" };
+    }
+
+    if (
+      trip.status === TripStatus.CANCELLED ||
+      trip.status === TripStatus.COMPLETED
+    ) {
       return { ok: false, message: "Trip is not payable" };
     }
 
     if (trip.paymentMode === PaymentMode.PAY_ON_DROPOFF) {
-      return { ok: false, message: "This trip is PAY_ON_DROPOFF. No online payment required." };
+      return {
+        ok: false,
+        message: "This trip is PAY_ON_DROPOFF. No online payment required.",
+      };
     }
 
-       const fareNgn = trip.fare?.totalAmount ?? null;
+    const fareNgn = trip.fare?.totalAmount ?? null;
 
     if (!fareNgn || Number(fareNgn) <= 0) {
       return { ok: false, message: "Fare not available for this trip" };
@@ -57,9 +83,17 @@ private paystackBaseUrl = process.env.PAYSTACK_BASE_URL || "https://api.paystack
 
     if (trip.payment) {
       if (trip.payment.status === PaymentStatus.PAID) {
-        return { ok: true, status: "PAID", reference: trip.payment.reference };
+        return {
+          ok: true,
+          status: "PAID",
+          reference: trip.payment.reference,
+        };
       }
-      if (trip.payment.status === PaymentStatus.PENDING && trip.payment.authorizationUrl) {
+
+      if (
+        trip.payment.status === PaymentStatus.PENDING &&
+        trip.payment.authorizationUrl
+      ) {
         return {
           ok: true,
           status: "PENDING",
@@ -83,6 +117,7 @@ private paystackBaseUrl = process.env.PAYSTACK_BASE_URL || "https://api.paystack
         email,
         amount,
         reference,
+        callback_url: this.paystackCallbackUrl || undefined,
         metadata: {
           tripId: trip.id,
           riderId: trip.riderId,
@@ -95,12 +130,21 @@ private paystackBaseUrl = process.env.PAYSTACK_BASE_URL || "https://api.paystack
     const json: any = await resp.json().catch(() => null);
 
     if (!resp.ok || !json?.status) {
-      return { ok: false, message: "Paystack initialize failed", details: json || { status: resp.status } };
+      return {
+        ok: false,
+        message: "Paystack initialize failed",
+        details: json || { status: resp.status },
+      };
     }
 
     const authorizationUrl = json.data?.authorization_url as string | undefined;
+
     if (!authorizationUrl) {
-      return { ok: false, message: "Paystack did not return authorization_url", details: json };
+      return {
+        ok: false,
+        message: "Paystack did not return authorization_url",
+        details: json,
+      };
     }
 
     const payment = await this.prisma.payment.upsert({
@@ -122,7 +166,7 @@ private paystackBaseUrl = process.env.PAYSTACK_BASE_URL || "https://api.paystack
       },
     });
 
-        return {
+    return {
       ok: true,
       status: payment.status,
       reference: payment.reference,
@@ -164,7 +208,9 @@ private paystackBaseUrl = process.env.PAYSTACK_BASE_URL || "https://api.paystack
     }
 
     const resp = await fetch(
-      `${this.paystackBaseUrl}/transaction/verify/${encodeURIComponent(input.reference)}`,
+      `${this.paystackBaseUrl}/transaction/verify/${encodeURIComponent(
+        input.reference,
+      )}`,
       {
         method: "GET",
         headers: {
