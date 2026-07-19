@@ -242,10 +242,14 @@ async function verifyLastPaystackPayment() {
 
     showMessage(data.message || "Payment verified successfully.", "success");
 
-    const phoneInput = document.getElementById("statusPhone");
-    if (phoneInput?.value) {
-      await loadTripStatus(phoneInput.value.trim());
-    }
+if (data.status === "PAID" || data.payment?.status === "PAID") {
+  localStorage.removeItem("lastPaystackReference");
+}
+
+const phoneInput = document.getElementById("statusPhone");
+if (phoneInput?.value) {
+  await loadTripStatus(phoneInput.value.trim());
+}
   } catch (err) {
     console.error(err);
     showMessage(err.message || "Failed to verify payment.", "error");
@@ -404,10 +408,12 @@ checkStatusBtn?.addEventListener("click", async () => {
   await loadTripStatus(phone);
 });
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const phoneInput = document.getElementById("phone");
   const statusPhoneInput = document.getElementById("statusPhone");
   const savedPhone = localStorage.getItem("riderPhone");
+  const lastReference = localStorage.getItem("lastPaystackReference");
+  const lastTripId = localStorage.getItem("lastRiderTripId");
 
   if (phoneInput && savedPhone && !phoneInput.value) {
     phoneInput.value = savedPhone;
@@ -415,5 +421,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (statusPhoneInput && savedPhone && !statusPhoneInput.value) {
     statusPhoneInput.value = savedPhone;
+  }
+
+  const isStatusPage = !!statusPhoneInput && !!tripStatusCard;
+
+  if (!isStatusPage) return;
+
+  if (lastReference && lastTripId) {
+    showMessage("Checking payment confirmation...", "success");
+
+    try {
+      await verifyLastPaystackPayment();
+
+      if (savedPhone) {
+        await loadTripStatus(savedPhone);
+      }
+    } catch (err) {
+      console.error(err);
+      showMessage(
+        "Payment return detected, but automatic verification failed. Please click Verify Payment.",
+        "error",
+      );
+    }
+
+    return;
+  }
+
+  if (savedPhone) {
+    await loadTripStatus(savedPhone);
   }
 });
