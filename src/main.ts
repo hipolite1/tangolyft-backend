@@ -5,6 +5,7 @@ import { NestExpressApplication } from "@nestjs/platform-express";
 import helmet from "helmet";
 import compression from "compression";
 import express from "express";
+import { join } from "path";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -58,6 +59,17 @@ async function bootstrap() {
   app.set("trust proxy", 1);
   app.use(helmet());
   app.use(compression());
+  app.useStaticAssets(join(process.cwd(), "rider"), {
+  prefix: "/rider",
+});
+
+app.useStaticAssets(join(process.cwd(), "driver"), {
+  prefix: "/driver",
+});
+
+app.useStaticAssets(join(process.cwd(), "admin"), {
+  prefix: "/admin",
+});
 
   app.useGlobalPipes(
     new ValidationPipe({

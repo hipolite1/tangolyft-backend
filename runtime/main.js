@@ -9,6 +9,7 @@ const common_1 = require("@nestjs/common");
 const helmet_1 = __importDefault(require("helmet"));
 const compression_1 = __importDefault(require("compression"));
 const express_1 = __importDefault(require("express"));
+const path_1 = require("path");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     const allowedOrigins = new Set([
@@ -48,6 +49,15 @@ async function bootstrap() {
     app.set("trust proxy", 1);
     app.use((0, helmet_1.default)());
     app.use((0, compression_1.default)());
+    app.useStaticAssets((0, path_1.join)(process.cwd(), "rider"), {
+        prefix: "/rider",
+    });
+    app.useStaticAssets((0, path_1.join)(process.cwd(), "driver"), {
+        prefix: "/driver",
+    });
+    app.useStaticAssets((0, path_1.join)(process.cwd(), "admin"), {
+        prefix: "/admin",
+    });
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,
         forbidNonWhitelisted: true,
