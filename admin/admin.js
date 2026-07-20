@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:3000";
+const API_BASE = window.location.origin;
 const ADMIN_TOKEN_KEY = "tangolyft_admin_token";
 const ADMIN_USER_KEY = "tangolyft_admin_user";
 
