@@ -1,4 +1,4 @@
-const API_BASE = "https://tangolyft-backend.onrender.com";
+const API_BASE = window.location.origin;
 
 const message = document.getElementById("message");
 const requestTripBtn = document.getElementById("requestTripBtn");
