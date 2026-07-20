@@ -233,7 +233,7 @@ async function loadDriverInbox() {
 
     if (trip.status === "REQUESTED") {
       actionButtons = `
-        <button onclick="acceptTrip('${trip.id}')" class="btn-primary">
+        <button class="btn-primary trip-action-btn" data-action="accept" data-trip-id="${trip.id}">
           Accept Trip
         </button>
       `;
@@ -241,7 +241,7 @@ async function loadDriverInbox() {
 
     if (trip.status === "ACCEPTED") {
       actionButtons = `
-        <button onclick="startTrip('${trip.id}')" class="btn-primary">
+        <button class="btn-primary trip-action-btn" data-action="start" data-trip-id="${trip.id}">
           Start Trip
         </button>
       `;
@@ -249,7 +249,7 @@ async function loadDriverInbox() {
 
     if (trip.status === "STARTED") {
       actionButtons = `
-        <button onclick="completeTrip('${trip.id}')" class="btn-primary" style="background:green;">
+        <button class="btn-primary trip-action-btn" data-action="complete" data-trip-id="${trip.id}" style="background:green;">
           Complete Trip
         </button>
       `;
@@ -360,6 +360,43 @@ async function completeTrip(tripId) {
     showMessage(err.message, "error");
   }
 }
+
+document.addEventListener("click", async (event) => {
+  const button = event.target.closest(".trip-action-btn");
+
+  if (!button) return;
+
+  const tripId = button.dataset.tripId;
+  const action = button.dataset.action;
+
+  if (!tripId || !action) {
+    showMessage("Missing trip action details.", "error");
+    return;
+  }
+
+  button.disabled = true;
+
+  try {
+    if (action === "accept") {
+      await acceptTrip(tripId);
+      return;
+    }
+
+    if (action === "start") {
+      await startTrip(tripId);
+      return;
+    }
+
+    if (action === "complete") {
+      await completeTrip(tripId);
+      return;
+    }
+
+    showMessage("Unknown trip action.", "error");
+  } finally {
+    button.disabled = false;
+  }
+});
 
 async function updateDriverLocation() {
   const token = localStorage.getItem("driverToken");
