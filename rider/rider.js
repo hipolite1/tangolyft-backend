@@ -412,6 +412,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const phoneInput = document.getElementById("phone");
   const statusPhoneInput = document.getElementById("statusPhone");
   const savedPhone = localStorage.getItem("riderPhone");
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlReference = urlParams.get("reference") || urlParams.get("trxref");
+
+  if (urlReference) {
+    localStorage.setItem("lastPaystackReference", urlReference);
+  }
+
   const lastReference = localStorage.getItem("lastPaystackReference");
   const lastTripId = localStorage.getItem("lastRiderTripId");
 
@@ -439,7 +447,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (err) {
       console.error(err);
       showMessage(
-        "Payment return detected, but automatic verification failed. Please click Verify Payment.",
+        "Payment return detected, but automatic verification failed. Please click Check Status or try Pay Now again.",
         "error",
       );
     }
