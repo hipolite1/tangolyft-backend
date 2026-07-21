@@ -460,8 +460,8 @@ async function loadDriverWallet() {
     const balance = data.wallet?.balance || 0;
 
     walletCard.innerHTML = `
-      <p><strong>Driver ID:</strong> ${data.driverId || "-"}</p>
-      <p><strong>Driver Type:</strong> ${data.driverType || "-"}</p>
+      <p><strong>Driver ID:</strong> ${data.driver?.id || data.wallet?.driverId || "-"}</p>
+      <p><strong>Driver Type:</strong> ${data.driver?.driverType || "-"}</p>
       <p><strong>Wallet Balance:</strong> ${formatNaira(balance)}</p>
     `;
   } catch (err) {
