@@ -9,6 +9,11 @@ function showMessage(text, type = "success") {
   message.className = type || "";
 }
 
+function formatNaira(value) {
+  if (value === null || value === undefined || value === "") return "₦0";
+  return `₦${Number(value).toLocaleString()}`;
+}
+
 function setDriverAvailabilityUi(availability) {
   if (!driverStatus) return;
 
@@ -133,6 +138,10 @@ verifyOtpBtn?.addEventListener("click", async () => {
 const goOnlineBtn = document.getElementById("goOnlineBtn");
 const goOfflineBtn = document.getElementById("goOfflineBtn");
 const driverStatus = document.getElementById("driverStatus");
+const walletCard = document.getElementById("walletCard");
+const walletTransactionsCard = document.getElementById("walletTransactionsCard");
+const requestCashoutBtn = document.getElementById("requestCashoutBtn");
+const cashoutAmountInput = document.getElementById("cashoutAmount");
 
 async function driverPost(path) {
   const token = localStorage.getItem("driverToken");
@@ -162,6 +171,8 @@ goOnlineBtn?.addEventListener("click", async () => {
 
     await updateDriverLocation();
     await loadDriverInbox();
+    await loadDriverWallet();
+    await loadWalletTransactions();
   } catch (err) {
     console.error(err);
     showMessage(err.message || "Failed to go online", "error");
@@ -332,6 +343,8 @@ async function tripAction(path, successMessage) {
 
   showMessage(successMessage, "success");
   await loadDriverInbox();
+  await loadDriverWallet();
+  await loadWalletTransactions();
 }
 
 async function acceptTrip(tripId) {
@@ -426,12 +439,162 @@ async function updateDriverLocation() {
   return data;
 }
 
+async function loadDriverWallet() {
+  const token = localStorage.getItem("driverToken");
+
+  if (!token || !walletCard) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/wallet/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data.message || "Failed to load wallet");
+    }
+
+    const balance = data.wallet?.balance || 0;
+
+    walletCard.innerHTML = `
+      <p><strong>Driver ID:</strong> ${data.driverId || "-"}</p>
+      <p><strong>Driver Type:</strong> ${data.driverType || "-"}</p>
+      <p><strong>Wallet Balance:</strong> ${formatNaira(balance)}</p>
+    `;
+  } catch (err) {
+    console.error(err);
+    walletCard.innerHTML = `<p>Failed to load wallet.</p>`;
+  }
+}
+
+async function loadWalletTransactions() {
+  const token = localStorage.getItem("driverToken");
+
+  if (!token || !walletTransactionsCard) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/wallet/transactions`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data.message || "Failed to load wallet transactions");
+    }
+
+    const txs = data.txs || [];
+
+    if (!txs.length) {
+      walletTransactionsCard.innerHTML = `<p>No wallet transactions yet.</p>`;
+      return;
+    }
+
+    walletTransactionsCard.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>Trip ID</th>
+              <th>Note</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${txs
+              .slice(0, 8)
+              .map(
+                (tx) => `
+                  <tr>
+                    <td>${tx.type || "-"}</td>
+                    <td>${formatNaira(tx.amount)}</td>
+                    <td>${tx.tripId || "-"}</td>
+                    <td>${tx.note || "-"}</td>
+                    <td>${tx.createdAt ? new Date(tx.createdAt).toLocaleString() : "-"}</td>
+                  </tr>
+                `,
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (err) {
+    console.error(err);
+    walletTransactionsCard.innerHTML = `<p>Failed to load wallet transactions.</p>`;
+  }
+}
+
+async function requestDriverCashout() {
+  const token = localStorage.getItem("driverToken");
+  const amount = Number(cashoutAmountInput?.value || 0);
+
+  if (!token) {
+    showMessage("Driver login token missing. Please login again.", "error");
+    return;
+  }
+
+  if (!amount || amount <= 0) {
+    showMessage("Enter a valid cashout amount.", "error");
+    return;
+  }
+
+  try {
+    if (requestCashoutBtn) requestCashoutBtn.disabled = true;
+    showMessage("Submitting cashout request...", "success");
+
+    const res = await fetch(`${API_BASE}/driver/cashout-request`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        amount,
+        note: "Cashout request from driver dashboard",
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data.message || "Cashout request failed");
+    }
+
+    showMessage(
+      `Cashout request submitted for ${formatNaira(amount)}. Admin will review it.`,
+      "success",
+    );
+
+    if (cashoutAmountInput) cashoutAmountInput.value = "";
+
+    await loadDriverWallet();
+    await loadWalletTransactions();
+  } catch (err) {
+    console.error(err);
+    showMessage(err.message || "Failed to submit cashout request.", "error");
+  } finally {
+    if (requestCashoutBtn) requestCashoutBtn.disabled = false;
+  }
+}
+
+requestCashoutBtn?.addEventListener("click", requestDriverCashout);
+
 async function initDriverDashboard() {
   try {
     setDriverAvailabilityUi("OFFLINE");
 
     await updateDriverLocation();
     await loadDriverInbox();
+    await loadDriverWallet();
+    await loadWalletTransactions();
   } catch (err) {
     console.error(err);
     showMessage(err.message || "Failed to load dashboard", "error");

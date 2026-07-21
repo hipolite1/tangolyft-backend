@@ -12,7 +12,7 @@
     <div class="card">
 
       <h1>Driver Dashboard</h1>
-      <p class="subtitle">Manage your availability and trips</p>
+      <p class="subtitle">Manage your availability, assigned trips, wallet, and cashouts</p>
 
       <div id="message"></div>
 
@@ -41,6 +41,31 @@
 
       <div id="tripCard">
         No active trip assigned.
+      </div>
+
+      <hr style="margin:30px 0;" />
+
+      <h2>Wallet</h2>
+
+      <div id="walletCard" class="trip-box">
+        Loading wallet...
+      </div>
+
+      <div class="form-group" style="margin-top:18px;">
+        <label>Cashout Amount</label>
+        <input type="number" id="cashoutAmount" min="1" placeholder="Enter amount, e.g. 1728" />
+      </div>
+
+      <button id="requestCashoutBtn" class="btn-primary">
+        Request Cashout
+      </button>
+
+      <hr style="margin:30px 0;" />
+
+      <h2>Recent Wallet Transactions</h2>
+
+      <div id="walletTransactionsCard">
+        Loading transactions...
       </div>
 
     </div>
