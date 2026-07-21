@@ -495,37 +495,34 @@ async function loadWalletTransactions() {
       return;
     }
 
-    walletTransactionsCard.innerHTML = `
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Type</th>
-              <th>Amount</th>
-              <th>Trip ID</th>
-              <th>Note</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${txs
-              .slice(0, 8)
-              .map(
-                (tx) => `
-                  <tr>
-                    <td>${tx.type || "-"}</td>
-                    <td>${formatNaira(tx.amount)}</td>
-                    <td>${tx.tripId || "-"}</td>
-                    <td>${tx.note || "-"}</td>
-                    <td>${tx.createdAt ? new Date(tx.createdAt).toLocaleString() : "-"}</td>
-                  </tr>
-                `,
-              )
-              .join("")}
-          </tbody>
-        </table>
-      </div>
-    `;
+    walletTransactionsCard.innerHTML = txs
+      .slice(0, 8)
+      .map((tx) => {
+        const type = tx.type || "-";
+        const amount = formatNaira(tx.amount);
+        const tripId = tx.tripId || "-";
+        const shortTripId =
+          tripId && tripId !== "-" && tripId.length > 12
+            ? `${tripId.slice(0, 8)}...${tripId.slice(-6)}`
+            : tripId;
+        const note = tx.note || "-";
+        const date = tx.createdAt ? new Date(tx.createdAt).toLocaleString() : "-";
+        const isDebit = type === "DEBIT";
+
+        return `
+          <div class="trip-box" style="margin-bottom:14px;">
+            <p>
+              <strong>${isDebit ? "Payout Debit" : "Trip Credit"}</strong>
+            </p>
+            <p><strong>Type:</strong> ${type}</p>
+            <p><strong>Amount:</strong> ${amount}</p>
+            <p><strong>Trip ID:</strong> ${shortTripId}</p>
+            <p><strong>Note:</strong> ${note}</p>
+            <p><strong>Date:</strong> ${date}</p>
+          </div>
+        `;
+      })
+      .join("");
   } catch (err) {
     console.error(err);
     walletTransactionsCard.innerHTML = `<p>Failed to load wallet transactions.</p>`;
