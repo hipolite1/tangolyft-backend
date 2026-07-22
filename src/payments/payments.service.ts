@@ -117,6 +117,7 @@ export class PaymentsService {
         email,
         amount,
         reference,
+        channels: ["card", "bank", "bank_transfer", "ussd"],
         callback_url: this.paystackCallbackUrl || undefined,
         metadata: {
           tripId: trip.id,
