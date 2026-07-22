@@ -19,6 +19,38 @@ function getRiderToken() {
   return localStorage.getItem("riderToken");
 }
 
+function isRiderProtectedPage() {
+  const path = window.location.pathname || "";
+  return path.includes("/rider/request.html") || path.includes("/rider/status.html");
+}
+
+function redirectToRiderLoginIfNeeded() {
+  if (!isRiderProtectedPage()) return false;
+
+  const token = getRiderToken();
+
+  if (!token) {
+    const returnTo = `${window.location.pathname}${window.location.search || ""}`;
+    window.location.href = `./login.html?returnTo=${encodeURIComponent(returnTo)}`;
+    return true;
+  }
+
+  return false;
+}
+
+function bindRiderLogout() {
+  const logoutBtn = document.getElementById("riderLogoutBtn");
+
+  logoutBtn?.addEventListener("click", () => {
+    localStorage.removeItem("riderToken");
+    localStorage.removeItem("lastRiderTripId");
+    localStorage.removeItem("lastPaystackReference");
+
+    window.location.href = "./login.html";
+  });
+}
+
+
 function formatTripDate(value) {
   if (!value) return "-";
   const d = new Date(value);
@@ -409,6 +441,10 @@ checkStatusBtn?.addEventListener("click", async () => {
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
+  bindRiderLogout();
+
+  if (redirectToRiderLoginIfNeeded()) return;
+
   const phoneInput = document.getElementById("phone");
   const statusPhoneInput = document.getElementById("statusPhone");
   const savedPhone = localStorage.getItem("riderPhone");

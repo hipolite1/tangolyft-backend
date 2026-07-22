@@ -17,6 +17,31 @@ function normalizePhone(phone) {
   return String(phone || "").trim().replace(/\s+/g, "");
 }
 
+function getLoginReturnTo() {
+  const params = new URLSearchParams(window.location.search);
+  const returnTo = params.get("returnTo");
+
+  if (!returnTo) return "./request.html";
+
+  if (returnTo.includes("/rider/status.html")) return "./status.html";
+  if (returnTo.includes("/rider/request.html")) return "./request.html";
+
+  return "./request.html";
+}
+
+function bindRiderLogout() {
+  const logoutBtn = document.getElementById("riderLogoutBtn");
+
+  logoutBtn?.addEventListener("click", () => {
+    localStorage.removeItem("riderToken");
+    localStorage.removeItem("lastRiderTripId");
+    localStorage.removeItem("lastPaystackReference");
+
+    showMessage("Logged out.", "success");
+  });
+}
+
+
 sendOtpBtn?.addEventListener("click", async () => {
   const phone = normalizePhone(phoneInput.value);
 
@@ -105,7 +130,7 @@ verifyOtpBtn?.addEventListener("click", async () => {
     showMessage("Login successful. Redirecting...", "success");
 
     setTimeout(() => {
-      window.location.href = "./request.html";
+      window.location.href = getLoginReturnTo();
     }, 700);
   } catch (err) {
     console.error(err);
@@ -116,6 +141,8 @@ verifyOtpBtn?.addEventListener("click", async () => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
+  bindRiderLogout();
+
   const savedPhone = localStorage.getItem("riderPhone");
 
   if (phoneInput && savedPhone && !phoneInput.value) {
