@@ -287,6 +287,8 @@ async function startPaystackPayment(tripId) {
       throw new Error("Paystack checkout link missing");
     }
 
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+
     window.location.href = data.authorizationUrl;
   } catch (err) {
     console.error(err);
