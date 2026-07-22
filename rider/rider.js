@@ -21,7 +21,10 @@ function getRiderToken() {
 
 function isRiderProtectedPage() {
   const path = window.location.pathname || "";
-  return path.includes("/rider/request.html") || path.includes("/rider/status.html");
+
+  // Requesting a new trip requires rider login.
+  // Status page must remain accessible after Paystack redirects back.
+  return path.includes("/rider/request.html");
 }
 
 function redirectToRiderLoginIfNeeded() {
@@ -61,6 +64,57 @@ function formatTripDate(value) {
 function formatNaira(value) {
   if (value === null || value === undefined || value === "") return "-";
   return `₦${value}`;
+}
+
+function showPrepaidTripActions(trip) {
+  if (!message || !trip?.id) return;
+
+  const fare = trip.fare?.totalAmount ?? trip.fare?.total ?? trip.fare?.amount;
+  const fareText = fare ? formatNaira(fare) : "the trip fare";
+
+  message.className = "success";
+  message.innerHTML = `
+    <div>
+      <p><strong>Trip requested successfully.</strong></p>
+      <p><strong>Fare:</strong> ${fareText}</p>
+      <p>Your ride is not confirmed until payment is completed.</p>
+
+      <button
+        id="requestPagePayNowBtn"
+        class="btn-primary"
+        data-trip-id="${trip.id}"
+        style="margin-top:12px;"
+      >
+        Pay Now
+      </button>
+
+      <a
+        href="./status.html"
+        style="display:block;margin-top:14px;font-weight:700;"
+      >
+        Check Trip Status
+      </a>
+    </div>
+  `;
+
+  const payBtn = document.getElementById("requestPagePayNowBtn");
+
+  payBtn?.addEventListener("click", async () => {
+    const tripId = payBtn.getAttribute("data-trip-id");
+
+    if (!tripId) {
+      showMessage("Trip ID missing for payment.", "error");
+      return;
+    }
+
+    payBtn.disabled = true;
+    payBtn.textContent = "Opening Paystack...";
+
+    await startPaystackPayment(tripId);
+
+    payBtn.disabled = false;
+    payBtn.textContent = "Pay Now";
+  });
 }
 
 function toggleBikeDeliveryFields() {
@@ -169,10 +223,7 @@ requestTripBtn?.addEventListener("click", async () => {
     requestTripBtn.textContent = "Trip Requested ✓";
 
     if (data.trip.paymentMode === "PREPAID") {
-      showMessage(
-        `Trip requested successfully. Trip ID: ${data.trip.id}. Go to trip status and click Pay Now to complete payment.`,
-        "success",
-      );
+      showPrepaidTripActions(data.trip);
     } else {
       showMessage(
         `Trip requested successfully. Trip ID: ${data.trip.id}. You can now check your trip status using your phone number.`,

@@ -23,8 +23,30 @@ function getLoginReturnTo() {
 
   if (!returnTo) return "./request.html";
 
-  if (returnTo.includes("/rider/status.html")) return "./status.html";
-  if (returnTo.includes("/rider/request.html")) return "./request.html";
+  try {
+    const url = new URL(returnTo, window.location.origin);
+    const pathAndQuery = `${url.pathname}${url.search || ""}`;
+
+    if (url.pathname.endsWith("/rider/status.html")) {
+      return `./status.html${url.search || ""}`;
+    }
+
+    if (url.pathname.endsWith("/rider/request.html")) {
+      return `./request.html${url.search || ""}`;
+    }
+
+    if (pathAndQuery.includes("/rider/status.html")) {
+      const query = pathAndQuery.split("/rider/status.html")[1] || "";
+      return `./status.html${query}`;
+    }
+
+    if (pathAndQuery.includes("/rider/request.html")) {
+      const query = pathAndQuery.split("/rider/request.html")[1] || "";
+      return `./request.html${query}`;
+    }
+  } catch (err) {
+    console.error("Invalid returnTo URL", err);
+  }
 
   return "./request.html";
 }
