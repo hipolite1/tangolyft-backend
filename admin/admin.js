@@ -405,6 +405,10 @@ function getTripCommitmentStatus(trip) {
   return trip?.commitmentStatus || "PENDING";
 }
 
+function isActiveTrip(trip) {
+  return ["REQUESTED", "ACCEPTED", "STARTED"].includes(trip?.status || "");
+}
+
 function sortTrips(trips, sortValue) {
   const items = [...trips];
 
@@ -509,9 +513,7 @@ async function completeTrip(token, tripId) {
 function renderTripStats(trips) {
   const total = trips.length;
   const requested = trips.filter((trip) => trip?.status === "REQUESTED").length;
-  const active = trips.filter(
-    (trip) => trip?.status === "ACCEPTED" || trip?.status === "STARTED",
-  ).length;
+  const active = trips.filter((trip) => isActiveTrip(trip)).length;
   const completed = trips.filter((trip) => trip?.status === "COMPLETED").length;
   const waived = trips.filter(
     (trip) => getTripCommitmentStatus(trip) === "WAIVED",
@@ -545,7 +547,9 @@ function applyTripFilters() {
     });
   }
 
-  if (status) {
+  if (status === "ACTIVE") {
+    filtered = filtered.filter((trip) => isActiveTrip(trip));
+  } else if (status) {
     filtered = filtered.filter((trip) => (trip?.status || "") === status);
   }
 
@@ -565,6 +569,34 @@ function applyTripFilters() {
   );
 }
 
+function updateTripQuickFilterButtons(activeStatus) {
+  document.querySelectorAll(".trip-quick-filter").forEach((btn) => {
+    const isActive = (btn.dataset.status || "") === (activeStatus || "");
+    btn.classList.toggle("active", isActive);
+  });
+}
+
+function bindTripQuickFilters() {
+  const statusFilter = $("statusFilter");
+  const commitmentFilter = $("commitmentFilter");
+  const sortFilter = $("sortFilter");
+  const tripSearch = $("tripSearch");
+
+  document.querySelectorAll(".trip-quick-filter").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const status = btn.dataset.status || "";
+
+      if (statusFilter) statusFilter.value = status;
+      if (commitmentFilter) commitmentFilter.value = "";
+      if (sortFilter) sortFilter.value = "requested_desc";
+      if (tripSearch) tripSearch.value = "";
+
+      updateTripQuickFilterButtons(status);
+      applyTripFilters();
+    });
+  });
+}
+
 function bindTripFilterControls() {
   const tripSearch = $("tripSearch");
   const statusFilter = $("statusFilter");
@@ -573,15 +605,19 @@ function bindTripFilterControls() {
   const clearFiltersBtn = $("clearFiltersBtn");
 
   tripSearch?.addEventListener("input", applyTripFilters);
-  statusFilter?.addEventListener("change", applyTripFilters);
+  statusFilter?.addEventListener("change", () => {
+    updateTripQuickFilterButtons(statusFilter.value || "");
+    applyTripFilters();
+  });
   commitmentFilter?.addEventListener("change", applyTripFilters);
   sortFilter?.addEventListener("change", applyTripFilters);
 
   clearFiltersBtn?.addEventListener("click", () => {
     if (tripSearch) tripSearch.value = "";
-    if (statusFilter) statusFilter.value = "";
+    if (statusFilter) statusFilter.value = "ACTIVE";
     if (commitmentFilter) commitmentFilter.value = "";
     if (sortFilter) sortFilter.value = "requested_desc";
+    updateTripQuickFilterButtons("ACTIVE");
     applyTripFilters();
   });
 }
@@ -593,6 +629,7 @@ function bindStatCardClicks() {
   $("statCardTotal")?.addEventListener("click", () => {
     if (statusFilter) statusFilter.value = "";
     if (commitmentFilter) commitmentFilter.value = "";
+    updateTripQuickFilterButtons("");
     applyTripFilters();
   });
 
@@ -602,12 +639,14 @@ function bindStatCardClicks() {
   });
 
   $("statCardActive")?.addEventListener("click", () => {
-    if (statusFilter) statusFilter.value = "";
+    if (statusFilter) statusFilter.value = "ACTIVE";
+    updateTripQuickFilterButtons("ACTIVE");
     applyTripFilters();
   });
 
   $("statCardCompleted")?.addEventListener("click", () => {
     if (statusFilter) statusFilter.value = "COMPLETED";
+    updateTripQuickFilterButtons("COMPLETED");
     applyTripFilters();
   });
 
@@ -1410,7 +1449,12 @@ function initTripsPage() {
   const refreshBtn = $("refreshBtn");
   const logoutBtn = $("logoutBtn");
 
+  const statusFilter = $("statusFilter");
+  if (statusFilter && !statusFilter.value) statusFilter.value = "ACTIVE";
+  updateTripQuickFilterButtons(statusFilter?.value || "ACTIVE");
+
   bindTripFilterControls();
+  bindTripQuickFilters();
   bindStatCardClicks();
 
   refreshBtn?.addEventListener("click", async () => {

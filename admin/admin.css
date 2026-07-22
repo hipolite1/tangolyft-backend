@@ -218,3 +218,82 @@ th {
   background: #e8f0fe;
   color: #174ea6;
 }
+/* Trips dashboard cleanup */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  gap: 14px;
+  margin: 18px 0 22px;
+}
+
+.stat-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+}
+
+.stat-card:hover {
+  transform: translateY(-1px);
+}
+
+.stat-label {
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  color: #111827;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.quick-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.trip-quick-filter.active {
+  background: #4361ee;
+  color: #ffffff;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 800;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  font-size: 16px;
+}
+
+.table-wrap,
+.card table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 900px) {
+  .stats-grid,
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+}
