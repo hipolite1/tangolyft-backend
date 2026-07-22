@@ -94,7 +94,13 @@ requestOtpBtn?.addEventListener("click", async () => {
       throw new Error(data.message || "Failed to request OTP");
     }
 
-    showMessage("OTP sent successfully!", "success");
+    const debugOtp = data.otp || data.debugOtp || data.debugOtpRaw;
+
+    if (debugOtp && debugOtp !== "true") {
+      showMessage(`OTP sent. Test OTP: ${debugOtp}`, "success");
+    } else {
+      showMessage("OTP sent successfully. Check your phone or Render logs.", "success");
+    }
   } catch (err) {
     console.error(err);
     showMessage(err.message || "OTP request failed", "error");
