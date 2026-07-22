@@ -260,7 +260,10 @@ async function startPaystackPayment(tripId) {
   }
 
   try {
-    showMessage("Starting Paystack payment...", "success");
+    showMessage(
+      "Payment opened in Paystack. Choose Card, Transfer, Bank, or USSD. For Transfer, send the exact fare to the account shown, then return to Trip Status.",
+      "success",
+    );
 
     const res = await fetch(`${API_BASE}/payments/paystack/initialize`, {
       method: "POST",
