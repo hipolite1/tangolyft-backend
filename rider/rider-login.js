@@ -1,5 +1,12 @@
 const API_BASE = window.location.origin;
 
+function shouldShowDebugOtp() {
+  const host = window.location.hostname;
+
+  return host === "localhost" || host === "127.0.0.1" || host === "::1";
+}
+
+
 const message = document.getElementById("message");
 const phoneInput = document.getElementById("phone");
 const otpInput = document.getElementById("otp");
@@ -99,10 +106,10 @@ sendOtpBtn?.addEventListener("click", async () => {
     otpSection.style.display = "block";
 
     const debugOtp = data.otp || data.debugOtp || data.debugOtpRaw;
-    if (debugOtp && debugOtp !== "true") {
+    if (shouldShowDebugOtp() && debugOtp && debugOtp !== "true") {
       showMessage(`OTP sent. Test OTP: ${debugOtp}`, "success");
     } else {
-      showMessage("OTP sent. Check your phone or Render logs for the test OTP.", "success");
+      showMessage("OTP sent. Check your phone.", "success");
     }
   } catch (err) {
     console.error(err);

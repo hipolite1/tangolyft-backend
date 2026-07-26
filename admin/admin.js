@@ -1,4 +1,11 @@
 const API_BASE = window.location.origin;
+
+function shouldShowDebugOtp() {
+  const host = window.location.hostname;
+
+  return host === "localhost" || host === "127.0.0.1" || host === "::1";
+}
+
 const ADMIN_TOKEN_KEY = "tangolyft_admin_token";
 const ADMIN_USER_KEY = "tangolyft_admin_user";
 
@@ -1235,7 +1242,7 @@ function initLoginPage() {
       const data = await requestOtp(phone);
 
       let msg = "OTP requested successfully.";
-      if (data.otp) {
+      if (shouldShowDebugOtp() && data.otp) {
         msg += ` Debug OTP: ${data.otp}`;
       }
 
