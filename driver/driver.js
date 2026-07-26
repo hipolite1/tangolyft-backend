@@ -253,9 +253,23 @@ async function loadDriverInbox() {
 
     const trip = trips[0];
 
+    const hasAssignedDriver = Boolean(
+      trip.driverId ||
+        trip.driver?.id ||
+        trip.driver?.phone ||
+        trip.driverPhone ||
+        trip.driver,
+    );
+
+    let displayStatus = trip.status;
+
+    if (trip.status === "REQUESTED" && hasAssignedDriver) {
+      displayStatus = "ACCEPTED";
+    }
+
     let actionButtons = "";
 
-    if (trip.status === "REQUESTED") {
+    if (displayStatus === "REQUESTED") {
       actionButtons = `
         <button class="btn-primary trip-action-btn" data-action="accept" data-trip-id="${trip.id}">
           Accept Trip
@@ -263,7 +277,7 @@ async function loadDriverInbox() {
       `;
     }
 
-    if (trip.status === "ACCEPTED") {
+    if (displayStatus === "ACCEPTED") {
       actionButtons = `
         <button class="btn-primary trip-action-btn" data-action="start" data-trip-id="${trip.id}">
           Start Trip
@@ -310,17 +324,17 @@ async function loadDriverInbox() {
       : trip.serviceType || "-"
 }</p>
 <p><strong>Status:</strong> ${
-  trip.status === "REQUESTED"
+  displayStatus === "REQUESTED"
     ? "Waiting for Driver"
-    : trip.status === "ACCEPTED"
+    : displayStatus === "ACCEPTED"
       ? "Driver Assigned"
-      : trip.status === "STARTED"
+      : displayStatus === "STARTED"
         ? "Trip In Progress"
-        : trip.status === "COMPLETED"
+        : displayStatus === "COMPLETED"
           ? "Trip Completed"
-          : trip.status === "CANCELLED"
+          : displayStatus === "CANCELLED"
             ? "Trip Cancelled"
-            : trip.status || "-"
+            : displayStatus || "-"
 }</p>
 
         ${deliveryDetails}
