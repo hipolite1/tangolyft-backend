@@ -1026,6 +1026,14 @@ setText("noteToCourier", trip?.delivery?.noteToCourier || "-");
     }
   }
 
+  const assignDriverRow = $("assignDriverRow");
+  if (assignDriverRow) {
+    const isCancelled = trip?.status === "CANCELLED";
+    const isCompleted = trip?.status === "COMPLETED";
+
+    assignDriverRow.style.display = isCompleted || isCancelled ? "none" : "flex";
+  }
+
   const cancelBtn = $("cancelTripBtn");
   if (cancelBtn) {
     const isCancelled = trip?.status === "CANCELLED";
