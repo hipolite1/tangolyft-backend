@@ -482,7 +482,7 @@ async function loadTripStatus(phone) {
     }
 
     renderTripStatus(data.trip);
-    showMessage("Trip status loaded.", "success");
+    showMessage("Trip status updated.", "success");
   } catch (err) {
     console.error(err);
     showMessage(err.message || "Failed to check trip status.", "error");
@@ -539,7 +539,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (err) {
       console.error(err);
       showMessage(
-        "Payment return detected, but automatic verification failed. Please click Check Status or try Pay Now again.",
+        "Payment confirmation is still pending. Please click Check Status or try Pay Now again.",
         "error",
       );
     }

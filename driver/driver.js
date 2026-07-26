@@ -201,7 +201,7 @@ goOfflineBtn?.addEventListener("click", async () => {
 
     const tripCard = document.getElementById("tripCard");
     if (tripCard) {
-      tripCard.innerHTML = `<p>No active trip assigned.</p>`;
+      tripCard.innerHTML = `<p>No assigned trip at the moment.</p>`;
     }
   } catch (err) {
     console.error(err);
@@ -246,7 +246,7 @@ async function loadDriverInbox() {
 
     if (!trips.length) {
       tripCard.innerHTML = `
-        <p>No active trip assigned.</p>
+        <p>No assigned trip at the moment.</p>
       `;
       return;
     }
@@ -580,7 +580,7 @@ async function requestDriverCashout() {
 
   try {
     if (requestCashoutBtn) requestCashoutBtn.disabled = true;
-    showMessage("Submitting cashout request...", "success");
+    showMessage("Submitting payout request...", "success");
 
     const res = await fetch(`${API_BASE}/driver/cashout-request`, {
       method: "POST",
@@ -590,7 +590,7 @@ async function requestDriverCashout() {
       },
       body: JSON.stringify({
         amount,
-        note: "Cashout request from driver dashboard",
+        note: "Payout request from driver dashboard",
       }),
     });
 
@@ -601,7 +601,7 @@ async function requestDriverCashout() {
     }
 
     showMessage(
-      `Cashout request submitted for ${formatNaira(amount)}. Admin will review it.`,
+      `Payout request submitted for ${formatNaira(amount)}. Admin will review it.`,
       "success",
     );
 
