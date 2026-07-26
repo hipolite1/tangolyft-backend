@@ -514,17 +514,25 @@ async function loadWalletTransactions() {
         const note = tx.note || "-";
         const date = tx.createdAt ? new Date(tx.createdAt).toLocaleString() : "-";
         const isDebit = type === "DEBIT";
+        const title = isDebit ? "Payout Paid" : "Trip Earning";
+        const amountPrefix = isDebit ? "-" : "+";
+        const amountClass = isDebit ? "tx-amount debit" : "tx-amount credit";
+        const metaLabel = isDebit ? "Payout" : "Trip";
 
         return `
-          <div class="trip-box" style="margin-bottom:14px;">
-            <p>
-              <strong>${isDebit ? "Payout Debit" : "Trip Credit"}</strong>
-            </p>
-            <p><strong>Type:</strong> ${type}</p>
-            <p><strong>Amount:</strong> ${amount}</p>
-            <p><strong>Trip ID:</strong> ${shortTripId}</p>
-            <p><strong>Note:</strong> ${note}</p>
-            <p><strong>Date:</strong> ${date}</p>
+          <div class="wallet-tx-card ${isDebit ? "debit-card" : "credit-card"}">
+            <div class="wallet-tx-top">
+              <div>
+                <div class="tx-title">${title}</div>
+                <div class="tx-date">${date}</div>
+              </div>
+              <div class="${amountClass}">${amountPrefix} ${amount}</div>
+            </div>
+
+            <div class="tx-meta">
+              <div><strong>${metaLabel} ID:</strong> ${shortTripId}</div>
+              <div><strong>Note:</strong> ${note}</div>
+            </div>
           </div>
         `;
       })
