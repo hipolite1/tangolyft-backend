@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TangoLyft Admin - Operations</title>
+  <link rel="stylesheet" href="./admin.css" />
+</head>
+<body data-page="operations">
+  <div class="admin-layout">
+    <aside class="sidebar">
+      <div class="brand">TangoLyft Admin</div>
+      <nav class="nav">
+        <a href="./pending-drivers.html">Pending Drivers</a>
+        <a href="./approved-drivers.html">Approved Drivers</a>
+        <a href="./trips.html">Trips</a>
+        <a href="./payouts.html">Payouts</a>
+        <a href="./operations.html" class="active">Operations</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <div class="page-header">
+        <h1>Pilot Operations</h1>
+        <div class="row gap">
+          <button id="logoutBtn" class="btn danger">Logout</button>
+        </div>
+      </div>
+
+      <div id="status" class="status info"></div>
+
+      <div class="card">
+        <h2>Daily Admin Checklist</h2>
+        <ul class="ops-list">
+          <li>Check new paid and confirmed trips.</li>
+          <li>Assign available drivers or couriers to waiting trips.</li>
+          <li>Monitor active trips until completion.</li>
+          <li>Confirm completed trips credit the driver wallet.</li>
+          <li>Review pending payout requests.</li>
+          <li>Mark payout as paid only after money has been sent to the driver.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Trip Assignment Rules</h2>
+        <ul class="ops-list">
+          <li>Only assign drivers to trips with payment status PAID or Pay on Dropoff trips.</li>
+          <li>For prepaid trips, make sure commitment is CONFIRMED before assignment.</li>
+          <li>Assign one driver or courier at a time.</li>
+          <li>Do not reassign completed or cancelled trips.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Payment & Payout Rules</h2>
+        <ul class="ops-list">
+          <li>Prepaid trips must show PAID before dispatch.</li>
+          <li>Driver earnings are credited after trip completion.</li>
+          <li>Payout requests should be checked against the driver wallet balance.</li>
+          <li>After sending bank transfer to the driver, mark the payout as paid in Admin Payouts.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Support Notes</h2>
+        <ul class="ops-list">
+          <li>If a rider payment succeeds but status is not updated, check Trip Status again first.</li>
+          <li>If a driver cannot see an assigned trip, confirm the driver phone number is correct.</li>
+          <li>If a trip is cancelled, do not assign a driver.</li>
+          <li>Keep rider and driver communication clear and simple during the pilot.</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+
+  <script src="./admin.js"></script>
+</body>
+</html>

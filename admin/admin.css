@@ -297,3 +297,15 @@ th {
     grid-template-columns: 1fr;
   }
 }
+
+/* Operations page */
+.ops-list {
+  margin: 12px 0 0;
+  padding-left: 22px;
+  color: #334155;
+  line-height: 1.7;
+}
+
+.ops-list li {
+  margin-bottom: 8px;
+}
