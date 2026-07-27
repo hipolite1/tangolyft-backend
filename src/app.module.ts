@@ -17,6 +17,7 @@ import { WalletModule } from "./wallet/wallet.module";
 
 import { PaymentsModule } from "./payments/payments.module";
 import { WebhooksModule } from "./webhooks/webhooks.module";
+import { MapsModule } from "./maps/maps.module";
 
 import { ThrottlerProxyGuard } from "./auth/throttler-proxy.guard";
 
@@ -58,6 +59,7 @@ import { ThrottlerProxyGuard } from "./auth/throttler-proxy.guard";
     // Payments + provider webhooks
     PaymentsModule,
     WebhooksModule,
+    MapsModule,
   ],
   controllers: [AppController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerProxyGuard }, AppService],

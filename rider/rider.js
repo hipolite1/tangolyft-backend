@@ -198,64 +198,79 @@ function showPrepaidTripActions(trip) {
 }
 
 
-function captureDropoffLocation() {
-  if (!navigator.geolocation) {
-    showMessage("Location is not supported by this browser.", "error");
-    updateDropoffLocationStatus("Location is not supported on this device.", "error");
+async function setDropoffLocation() {
+  const token = getRiderToken();
+  const address = document.getElementById("dropoffAddress")?.value.trim();
+  const city = document.getElementById("city")?.value || "ABUJA";
+  const btn = document.getElementById("setDropoffLocationBtn");
+
+  if (!token) {
+    showMessage("Please login before setting drop-off location.", "error");
     return;
   }
 
-  const btn = document.getElementById("useDropoffLocationBtn");
-
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = "Getting location...";
+  if (!address) {
+    showMessage("Enter a drop-off address or landmark first.", "error");
+    updateDropoffLocationStatus("Drop-off address or landmark is required.", "error");
+    return;
   }
 
-  updateDropoffLocationStatus("Requesting drop-off GPS location...");
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Setting location...";
+    }
 
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      dropoffLocation = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-        accuracy: position.coords.accuracy,
-      };
+    updateDropoffLocationStatus("Finding drop-off location...");
 
-      updateDropoffLocationStatus(
-        `Drop-off GPS captured. Accuracy: about ${Math.round(position.coords.accuracy)} meters.`,
-        "success",
-      );
+    const res = await fetch(`${API_BASE}/maps/geocode`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        address,
+        city,
+      }),
+    });
 
-      showMessage("Drop-off location captured successfully.", "success");
+    const data = await res.json();
 
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = "Update Drop-off Location";
-      }
-    },
-    (error) => {
-      console.error(error);
-      dropoffLocation = null;
+    if (!res.ok || !data.ok) {
+      throw new Error(data.message || "Could not set drop-off location.");
+    }
 
-      updateDropoffLocationStatus(
-        "Drop-off GPS was not captured. Please allow location access and try again.",
-        "error",
-      );
+    dropoffLocation = {
+      lat: data.lat,
+      lng: data.lng,
+      address: data.address,
+      placeId: data.placeId,
+    };
 
-      showMessage("Drop-off location permission was denied or unavailable.", "error");
+    updateDropoffLocationStatus(`Drop-off set: ${data.address}`, "success");
+    showMessage("Drop-off location set successfully.", "success");
 
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = "Use My Current Location for Drop-off";
-      }
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 0,
-    },
-  );
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Update Drop-off Location";
+    }
+  } catch (err) {
+    console.error(err);
+    dropoffLocation = null;
+
+    updateDropoffLocationStatus(
+      err.message || "Could not set drop-off location.",
+      "error",
+    );
+
+    showMessage(err.message || "Could not set drop-off location.", "error");
+
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Set Drop-off Location";
+    }
+  }
 }
 
 function toggleBikeDeliveryFields() {
@@ -308,8 +323,8 @@ requestTripBtn?.addEventListener("click", async () => {
   }
 
   if (!dropoffLocation) {
-    showMessage("Please tap Use My Current Location for Drop-off before requesting the trip.", "error");
-    updateDropoffLocationStatus("Drop-off GPS is required before requesting a trip.", "error");
+    showMessage("Please tap Set Drop-off Location before requesting the trip.", "error");
+    updateDropoffLocationStatus("Drop-off location must be set before requesting a trip.", "error");
     return;
   }
 

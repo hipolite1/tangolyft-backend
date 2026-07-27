@@ -23,6 +23,7 @@ const trips_module_1 = require("./trips/trips.module");
 const wallet_module_1 = require("./wallet/wallet.module");
 const payments_module_1 = require("./payments/payments.module");
 const webhooks_module_1 = require("./webhooks/webhooks.module");
+const maps_module_1 = require("./maps/maps.module");
 const throttler_proxy_guard_1 = require("./auth/throttler-proxy.guard");
 let AppModule = class AppModule {
 };
@@ -58,6 +59,7 @@ exports.AppModule = AppModule = __decorate([
             wallet_module_1.WalletModule,
             payments_module_1.PaymentsModule,
             webhooks_module_1.WebhooksModule,
+            maps_module_1.MapsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [{ provide: core_1.APP_GUARD, useClass: throttler_proxy_guard_1.ThrottlerProxyGuard }, app_service_1.AppService],
