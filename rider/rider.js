@@ -6,9 +6,18 @@ const serviceTypeSelect = document.getElementById("serviceType");
 const paymentModeSelect = document.getElementById("paymentMode");
 
 let pickupLocation = null;
+let dropoffLocation = null;
 
 function updatePickupLocationStatus(message, type = "") {
   const statusEl = document.getElementById("pickupLocationStatus");
+  if (!statusEl) return;
+
+  statusEl.textContent = message;
+  statusEl.className = `small-note ${type}`.trim();
+}
+
+function updateDropoffLocationStatus(message, type = "") {
+  const statusEl = document.getElementById("dropoffLocationStatus");
   if (!statusEl) return;
 
   statusEl.textContent = message;
@@ -188,6 +197,67 @@ function showPrepaidTripActions(trip) {
   });
 }
 
+
+function captureDropoffLocation() {
+  if (!navigator.geolocation) {
+    showMessage("Location is not supported by this browser.", "error");
+    updateDropoffLocationStatus("Location is not supported on this device.", "error");
+    return;
+  }
+
+  const btn = document.getElementById("useDropoffLocationBtn");
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Getting location...";
+  }
+
+  updateDropoffLocationStatus("Requesting drop-off GPS location...");
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      dropoffLocation = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+      };
+
+      updateDropoffLocationStatus(
+        `Drop-off GPS captured. Accuracy: about ${Math.round(position.coords.accuracy)} meters.`,
+        "success",
+      );
+
+      showMessage("Drop-off location captured successfully.", "success");
+
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Update Drop-off Location";
+      }
+    },
+    (error) => {
+      console.error(error);
+      dropoffLocation = null;
+
+      updateDropoffLocationStatus(
+        "Drop-off GPS was not captured. Please allow location access and try again.",
+        "error",
+      );
+
+      showMessage("Drop-off location permission was denied or unavailable.", "error");
+
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Use My Current Location for Drop-off";
+      }
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0,
+    },
+  );
+}
+
 function toggleBikeDeliveryFields() {
   if (!serviceTypeSelect || !bikeDeliveryFields) return;
 
@@ -237,6 +307,12 @@ requestTripBtn?.addEventListener("click", async () => {
     return;
   }
 
+  if (!dropoffLocation) {
+    showMessage("Please tap Use My Current Location for Drop-off before requesting the trip.", "error");
+    updateDropoffLocationStatus("Drop-off GPS is required before requesting a trip.", "error");
+    return;
+  }
+
   if (serviceType === "BIKE_DELIVERY") {
     if (!itemDescription || !recipientName || !recipientPhone) {
       showMessage(
@@ -275,8 +351,8 @@ requestTripBtn?.addEventListener("click", async () => {
 
         pickupLat: pickupLocation.lat,
         pickupLng: pickupLocation.lng,
-        dropoffLat: 9.0579,
-        dropoffLng: 7.4951,
+        dropoffLat: dropoffLocation.lat,
+        dropoffLng: dropoffLocation.lng,
 
         distanceKmEst: 8,
         durationMinEst: 20,
