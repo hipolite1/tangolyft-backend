@@ -372,10 +372,7 @@ requestTripBtn?.addEventListener("click", async () => {
         pickupLng: pickupLocation.lng,
         dropoffLat: dropoffLocation.lat,
         dropoffLng: dropoffLocation.lng,
-
-        distanceKmEst: 8,
-        durationMinEst: 20,
-
+\n
         ...(serviceType === "BIKE_DELIVERY"
           ? {
               itemDescription,

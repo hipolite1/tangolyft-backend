@@ -210,8 +210,24 @@ if (!rider) {
       }
 
       const city = dto.city ?? "ABUJA";
-      const distanceKm = dto.distanceKmEst ?? 2;
-      const durationMin = dto.durationMinEst ?? 10;
+
+      const straightLineKm = this.haversineKm(
+        dto.pickupLat,
+        dto.pickupLng,
+        dto.dropoffLat,
+        dto.dropoffLng,
+      );
+
+      const distanceKm = Math.max(
+        1,
+        Number((straightLineKm * 1.35).toFixed(2)),
+      );
+
+      const durationMin = Math.max(
+        5,
+        Math.round(distanceKm * 4),
+      );
+
       const paymentMode = dto.paymentMode ?? PaymentMode.PAY_ON_DROPOFF;
 
       const policy = await this.prisma.farePolicy.findFirst({
