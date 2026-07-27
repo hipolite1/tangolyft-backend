@@ -493,10 +493,41 @@ document.addEventListener("click", async (event) => {
   }
 });
 
+function getCurrentDriverPosition() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Location is not supported by this browser."));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          heading: position.coords.heading || 0,
+          accuracyM: position.coords.accuracy || null,
+        });
+      },
+      (error) => {
+        console.error(error);
+        reject(new Error("Driver location permission was denied or unavailable."));
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      },
+    );
+  });
+}
+
 async function updateDriverLocation() {
   const token = localStorage.getItem("driverToken");
 
   if (!token) return;
+
+  const position = await getCurrentDriverPosition();
 
   const res = await fetch(`${API_BASE}/driver/location`, {
     method: "PATCH",
@@ -505,10 +536,10 @@ async function updateDriverLocation() {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      lat: 9.0765,
-      lng: 7.3986,
-      heading: 0,
-      accuracyM: 10,
+      lat: position.lat,
+      lng: position.lng,
+      heading: position.heading,
+      accuracyM: position.accuracyM,
     }),
   });
 
