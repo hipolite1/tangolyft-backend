@@ -180,9 +180,18 @@ goOnlineBtn?.addEventListener("click", async () => {
     const data = await driverPost("/driver/go-online");
 
     setDriverAvailabilityUi(data.driver.availability);
-    showMessage("You are now ONLINE", "success");
 
-    await updateDriverLocation();
+    try {
+      await updateDriverLocation();
+      showMessage("You are now ONLINE. Location updated.", "success");
+    } catch (locationErr) {
+      console.error(locationErr);
+      showMessage(
+        "You are now ONLINE, but location was not shared. Admin may not see you as nearby.",
+        "error",
+      );
+    }
+
     await loadDriverInbox();
     await loadDriverWallet();
     await loadWalletTransactions();
@@ -709,7 +718,6 @@ async function initDriverDashboard() {
   try {
     setDriverAvailabilityUi("OFFLINE");
 
-    await updateDriverLocation();
     await loadDriverInbox();
     await loadDriverWallet();
     await loadWalletTransactions();
