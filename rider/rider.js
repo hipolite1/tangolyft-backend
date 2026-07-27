@@ -298,6 +298,10 @@ document
   .getElementById("usePickupLocationBtn")
   ?.addEventListener("click", capturePickupLocation);
 
+document
+  .getElementById("setDropoffLocationBtn")
+  ?.addEventListener("click", setDropoffLocation);
+
 requestTripBtn?.addEventListener("click", async () => {
   const phone = document.getElementById("phone").value.trim();
   const pickupAddress = document.getElementById("pickupAddress").value.trim();
