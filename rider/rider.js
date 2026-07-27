@@ -209,6 +209,10 @@ function toggleBikeDeliveryFields() {
 serviceTypeSelect?.addEventListener("change", toggleBikeDeliveryFields);
 toggleBikeDeliveryFields();
 
+document
+  .getElementById("usePickupLocationBtn")
+  ?.addEventListener("click", capturePickupLocation);
+
 requestTripBtn?.addEventListener("click", async () => {
   const phone = document.getElementById("phone").value.trim();
   const pickupAddress = document.getElementById("pickupAddress").value.trim();
