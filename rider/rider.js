@@ -4,6 +4,77 @@ const message = document.getElementById("message");
 const requestTripBtn = document.getElementById("requestTripBtn");
 const serviceTypeSelect = document.getElementById("serviceType");
 const paymentModeSelect = document.getElementById("paymentMode");
+
+let pickupLocation = null;
+
+function updatePickupLocationStatus(message, type = "") {
+  const statusEl = document.getElementById("pickupLocationStatus");
+  if (!statusEl) return;
+
+  statusEl.textContent = message;
+  statusEl.className = `small-note ${type}`.trim();
+}
+
+function capturePickupLocation() {
+  if (!navigator.geolocation) {
+    showMessage("Location is not supported by this browser.", "error");
+    updatePickupLocationStatus("Location is not supported on this device.", "error");
+    return;
+  }
+
+  const btn = document.getElementById("usePickupLocationBtn");
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Getting location...";
+  }
+
+  updatePickupLocationStatus("Requesting pickup GPS location...");
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      pickupLocation = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+      };
+
+      updatePickupLocationStatus(
+        `Pickup GPS captured. Accuracy: about ${Math.round(position.coords.accuracy)} meters.`,
+        "success",
+      );
+
+      showMessage("Pickup location captured successfully.", "success");
+
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Update Pickup Location";
+      }
+    },
+    (error) => {
+      console.error(error);
+      pickupLocation = null;
+
+      updatePickupLocationStatus(
+        "Pickup GPS was not captured. Please allow location access and try again.",
+        "error",
+      );
+
+      showMessage("Pickup location permission was denied or unavailable.", "error");
+
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Use My Current Location for Pickup";
+      }
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0,
+    },
+  );
+}
+
 const bikeDeliveryFields = document.getElementById("bikeDeliveryFields");
 
 const checkStatusBtn = document.getElementById("checkStatusBtn");
@@ -156,6 +227,12 @@ requestTripBtn?.addEventListener("click", async () => {
     return;
   }
 
+  if (!pickupLocation) {
+    showMessage("Please tap Use My Current Location for Pickup before requesting the trip.", "error");
+    updatePickupLocationStatus("Pickup GPS is required before requesting a trip.", "error");
+    return;
+  }
+
   if (serviceType === "BIKE_DELIVERY") {
     if (!itemDescription || !recipientName || !recipientPhone) {
       showMessage(
@@ -192,8 +269,8 @@ requestTripBtn?.addEventListener("click", async () => {
         pickupAddress,
         dropoffAddress,
 
-        pickupLat: 9.0765,
-        pickupLng: 7.3986,
+        pickupLat: pickupLocation.lat,
+        pickupLng: pickupLocation.lng,
         dropoffLat: 9.0579,
         dropoffLng: 7.4951,
 
