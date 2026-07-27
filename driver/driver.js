@@ -209,6 +209,23 @@ goOfflineBtn?.addEventListener("click", async () => {
   }
 });
 
+
+function hasValidCoords(lat, lng) {
+  return lat !== undefined && lat !== null && lng !== undefined && lng !== null;
+}
+
+function googleMapsDirectionsUrl(lat, lng, fallbackAddress) {
+  if (hasValidCoords(lat, lng)) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${lat},${lng}`)}`;
+  }
+
+  if (fallbackAddress) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fallbackAddress)}`;
+  }
+
+  return "";
+}
+
 async function loadDriverInbox() {
   const token = localStorage.getItem("driverToken");
 
@@ -252,6 +269,40 @@ async function loadDriverInbox() {
     }
 
     const trip = trips[0];
+
+    const pickupMapsUrl = googleMapsDirectionsUrl(
+      trip.pickupLat,
+      trip.pickupLng,
+      trip.pickupAddress,
+    );
+
+    const dropoffMapsUrl = googleMapsDirectionsUrl(
+      trip.dropoffLat,
+      trip.dropoffLng,
+      trip.dropoffAddress,
+    );
+
+    const riderPhone = trip.rider?.phone || trip.riderPhone || "";
+
+    const navigationButtons = `
+      <div class="trip-navigation">
+        ${
+          pickupMapsUrl
+            ? `<a class="btn-primary nav-link-btn" href="${pickupMapsUrl}" target="_blank" rel="noopener">Navigate to Pickup</a>`
+            : ""
+        }
+        ${
+          dropoffMapsUrl
+            ? `<a class="btn-primary nav-link-btn" href="${dropoffMapsUrl}" target="_blank" rel="noopener">Navigate to Drop-off</a>`
+            : ""
+        }
+        ${
+          riderPhone
+            ? `<a class="btn-secondary nav-link-btn" href="tel:${riderPhone}">Call Rider</a>`
+            : ""
+        }
+      </div>
+    `;
 
     const hasAssignedDriver = Boolean(
       trip.driverId ||
@@ -315,6 +366,9 @@ async function loadDriverInbox() {
       <div class="trip-box">
         <p><strong>Trip ID:</strong> ${trip.id}</p>
         <p><strong>Rider:</strong> ${trip.rider?.phone || trip.riderPhone || "-"}</p>
+        <p><strong>Pickup:</strong> ${trip.pickupAddress || "-"}</p>
+        <p><strong>Drop-off:</strong> ${trip.dropoffAddress || "-"}</p>
+        ${navigationButtons}
         <p><strong>City:</strong> ${trip.city}</p>
         <p><strong>Service:</strong> ${
   trip.serviceType === "BIKE_DELIVERY"

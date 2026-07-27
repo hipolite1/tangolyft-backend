@@ -158,3 +158,25 @@ select:focus {
     font-size: 22px;
   }
 }
+
+/* Trip navigation buttons */
+.trip-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.nav-link-btn {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+.btn-secondary.nav-link-btn {
+  background: #0f172a;
+  color: #ffffff;
+}
