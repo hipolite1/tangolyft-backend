@@ -254,6 +254,107 @@ let AdminService = class AdminService {
         });
         return { ok: true, trip: updated };
     }
+    haversineKm(lat1, lng1, lat2, lng2) {
+        const toRad = (value) => (value * Math.PI) / 180;
+        const earthRadiusKm = 6371;
+        const dLat = toRad(lat2 - lat1);
+        const dLng = toRad(lng2 - lng1);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRad(lat1)) *
+                Math.cos(toRad(lat2)) *
+                Math.sin(dLng / 2) *
+                Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return earthRadiusKm * c;
+    }
+    serviceTypeMatchesDriver(driverType, serviceType) {
+        if (serviceType === "CAR_RIDE") {
+            return driverType === "CAR_DRIVER";
+        }
+        if (serviceType === "BIKE_DELIVERY") {
+            return driverType === "BIKE_COURIER";
+        }
+        return true;
+    }
+    async nearbyDriversForTrip(tripId) {
+        if (!tripId || tripId.length < 10) {
+            throw new common_1.BadRequestException("Invalid tripId");
+        }
+        const trip = await this.prisma.trip.findUnique({
+            where: { id: tripId },
+        });
+        if (!trip) {
+            throw new common_1.NotFoundException("Trip not found");
+        }
+        if (trip.pickupLat == null || trip.pickupLng == null) {
+            throw new common_1.BadRequestException("Trip pickup location is missing");
+        }
+        const now = Date.now();
+        const maxAgeMs = 30 * 60 * 1000;
+        const drivers = await this.prisma.driver.findMany({
+            where: {
+                availability: "ONLINE",
+                kycStatus: "APPROVED",
+                city: trip.city,
+            },
+            include: {
+                user: true,
+                location: true,
+                vehicle: true,
+            },
+        });
+        const nearbyDrivers = drivers
+            .map((driver) => {
+            const location = driver.location;
+            const lastSeenAt = location?.lastSeenAt || null;
+            const ageMs = lastSeenAt ? now - new Date(lastSeenAt).getTime() : null;
+            const isFresh = ageMs !== null ? ageMs <= maxAgeMs : false;
+            const matchesServiceType = this.serviceTypeMatchesDriver(String(driver.driverType), String(trip.serviceType));
+            const distanceKm = location?.lat != null && location?.lng != null
+                ? this.haversineKm(trip.pickupLat, trip.pickupLng, location.lat, location.lng)
+                : null;
+            return {
+                driverId: driver.id,
+                fullName: driver.user?.fullName || null,
+                phone: driver.user?.phone || null,
+                driverType: driver.driverType,
+                city: driver.city,
+                availability: driver.availability,
+                kycStatus: driver.kycStatus,
+                lat: location?.lat ?? null,
+                lng: location?.lng ?? null,
+                accuracyM: location?.accuracyM ?? null,
+                heading: location?.heading ?? null,
+                lastSeenAt,
+                ageMs,
+                isFresh,
+                matchesServiceType,
+                distanceKm,
+            };
+        })
+            .filter((driver) => driver.matchesServiceType)
+            .filter((driver) => driver.distanceKm !== null)
+            .sort((a, b) => {
+            if (a.isFresh && !b.isFresh)
+                return -1;
+            if (!a.isFresh && b.isFresh)
+                return 1;
+            return (a.distanceKm ?? Number.MAX_VALUE) - (b.distanceKm ?? Number.MAX_VALUE);
+        })
+            .slice(0, 10);
+        return {
+            ok: true,
+            trip: {
+                id: trip.id,
+                serviceType: trip.serviceType,
+                city: trip.city,
+                pickupLat: trip.pickupLat,
+                pickupLng: trip.pickupLng,
+            },
+            count: nearbyDrivers.length,
+            nearbyDrivers,
+        };
+    }
     async assignDriver(tripId, driverPhone) {
         if (!tripId || tripId.length < 10) {
             throw new common_1.BadRequestException("Invalid tripId");

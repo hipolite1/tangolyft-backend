@@ -39,6 +39,9 @@ let AdminController = class AdminController {
     async tripDetail(tripId) {
         return this.adminService.getTripDetail(tripId);
     }
+    async nearbyDrivers(tripId) {
+        return this.adminService.nearbyDriversForTrip(tripId);
+    }
     async waiveCommitment(tripId, user, body) {
         return this.adminService.waiveCommitment(tripId, user, body);
     }
@@ -113,6 +116,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "tripDetail", null);
+__decorate([
+    (0, require_role_1.RequireRole)("ADMIN"),
+    (0, common_1.Get)("trips/:tripId/nearby-drivers"),
+    __param(0, (0, common_1.Param)("tripId")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "nearbyDrivers", null);
 __decorate([
     (0, require_role_1.RequireRole)("ADMIN"),
     (0, common_1.Post)("trips/:tripId/waive-commitment"),

@@ -52,6 +52,12 @@ export class AdminController {
   }
 
   @RequireRole("ADMIN")
+  @Get("trips/:tripId/nearby-drivers")
+  async nearbyDrivers(@Param("tripId") tripId: string) {
+    return this.adminService.nearbyDriversForTrip(tripId);
+  }
+
+  @RequireRole("ADMIN")
   @Post("trips/:tripId/waive-commitment")
   async waiveCommitment(
     @Param("tripId") tripId: string,

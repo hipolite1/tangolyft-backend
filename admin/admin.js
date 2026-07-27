@@ -242,6 +242,23 @@ async function fetchTripDetail(token, tripId) {
   return data.trip;
 }
 
+async function fetchNearbyDrivers(token, tripId) {
+  const res = await fetch(`${API_BASE}/admin/trips/${tripId}/nearby-drivers`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.ok) {
+    throw new Error(data.message || "Failed to load nearby drivers");
+  }
+
+  return data.nearbyDrivers || [];
+}
+
 async function approveDriver(token, driverId) {
   const res = await fetch(`${API_BASE}/admin/drivers/${driverId}/approve`, {
     method: "POST",
@@ -959,6 +976,119 @@ function viewTripDetail(tripId) {
   window.location.href = `./trip-detail.html?tripId=${encodeURIComponent(tripId)}`;
 }
 
+function formatDistanceKm(distanceKm) {
+  if (distanceKm === null || distanceKm === undefined) return "-";
+  const n = Number(distanceKm);
+  if (!Number.isFinite(n)) return "-";
+  return `${n.toFixed(n < 10 ? 1 : 0)} km`;
+}
+
+function formatLastSeen(lastSeenAt, ageMs) {
+  if (!lastSeenAt) return "No GPS yet";
+
+  if (ageMs !== null && ageMs !== undefined) {
+    const mins = Math.round(Number(ageMs) / 60000);
+
+    if (mins <= 1) return "Just now";
+    if (mins < 60) return `${mins} min ago`;
+
+    const hours = Math.round(mins / 60);
+    return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  }
+
+  return formatDateTime(lastSeenAt);
+}
+
+function renderNearbyDrivers(drivers) {
+  const card = $("nearbyDriversCard");
+  if (!card) return;
+
+  if (!drivers || !drivers.length) {
+    card.innerHTML = `
+      <div class="empty-note">
+        No nearby online drivers with fresh GPS found yet.
+      </div>
+    `;
+    return;
+  }
+
+  card.innerHTML = `
+    <div class="nearby-driver-list">
+      ${drivers
+        .map((driver, index) => {
+          const phone = driver.phone || "";
+          const name = driver.fullName || "Driver";
+          const freshLabel = driver.isFresh ? "Fresh GPS" : "Old GPS";
+
+          return `
+            <div class="nearby-driver-card">
+              <div>
+                <strong>#${index + 1} ${escapeHtml(name)}</strong>
+                <div>${escapeHtml(phone || "-")}</div>
+                <div>${escapeHtml(driver.driverType || "-")} · ${escapeHtml(formatDistanceKm(driver.distanceKm))}</div>
+                <div>${escapeHtml(freshLabel)} · ${escapeHtml(formatLastSeen(driver.lastSeenAt, driver.ageMs))}</div>
+              </div>
+
+              <button
+                class="btn small use-nearby-driver-btn"
+                data-phone="${escapeHtml(phone)}"
+              >
+                Use Driver
+              </button>
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+
+  document.querySelectorAll(".use-nearby-driver-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const phone = btn.getAttribute("data-phone") || "";
+      const input = $("assignDriverInput");
+
+      if (input) {
+        input.value = phone;
+        input.focus();
+      }
+
+      setStatus("Driver phone filled. Click Assign Driver to confirm.", "info");
+    });
+  });
+}
+
+async function loadNearbyDriversForCurrentTrip() {
+  try {
+    const token = requireAdminToken();
+    if (!token) return;
+
+    const tripId = currentTripDetail?.id || getQueryParam("tripId");
+
+    if (!tripId) {
+      throw new Error("Missing tripId");
+    }
+
+    const card = $("nearbyDriversCard");
+    if (card) {
+      card.innerHTML = "Loading nearby drivers...";
+    }
+
+    const drivers = await fetchNearbyDrivers(token, tripId);
+    renderNearbyDrivers(drivers);
+  } catch (err) {
+    console.error(err);
+
+    const card = $("nearbyDriversCard");
+    if (card) {
+      card.innerHTML = `
+        <div class="empty-note error">
+          ${escapeHtml(err.message || "Failed to load nearby drivers.")}
+        </div>
+      `;
+    }
+  }
+}
+
 function renderTripDetail(trip) {
   currentTripDetail = trip;
 
@@ -1217,6 +1347,7 @@ async function loadTripDetailPage() {
     setStatus("Loading trip detail...", "info");
     const trip = await fetchTripDetail(token, tripId);
     renderTripDetail(trip);
+    await loadNearbyDriversForCurrentTrip();
     setStatus("Trip detail loaded successfully.", "success");
   } catch (err) {
     setStatus(err.message || "Failed to load trip detail.", "error");
@@ -1414,6 +1545,7 @@ async function handleMarkPayoutPaid(payoutId) {
 
 function initPayoutsPage() {
   const refreshBtn = $("refreshBtn");
+  const refreshNearbyDriversBtn = $("refreshNearbyDriversBtn");
   const logoutBtn = $("logoutBtn");
 
   refreshBtn?.addEventListener("click", async () => {
@@ -1430,6 +1562,7 @@ function initPayoutsPage() {
 
 function initPendingDriversPage() {
   const refreshBtn = $("refreshBtn");
+  const refreshNearbyDriversBtn = $("refreshNearbyDriversBtn");
   const logoutBtn = $("logoutBtn");
 
   refreshBtn?.addEventListener("click", async () => {
@@ -1446,6 +1579,7 @@ function initPendingDriversPage() {
 
 function initApprovedDriversPage() {
   const refreshBtn = $("refreshBtn");
+  const refreshNearbyDriversBtn = $("refreshNearbyDriversBtn");
   const logoutBtn = $("logoutBtn");
 
   refreshBtn?.addEventListener("click", async () => {
@@ -1462,6 +1596,7 @@ function initApprovedDriversPage() {
 
 function initTripsPage() {
   const refreshBtn = $("refreshBtn");
+  const refreshNearbyDriversBtn = $("refreshNearbyDriversBtn");
   const logoutBtn = $("logoutBtn");
 
   const statusFilter = $("statusFilter");
@@ -1491,6 +1626,7 @@ function initTripsPage() {
 
 function initTripDetailPage() {
   const refreshBtn = $("refreshBtn");
+  const refreshNearbyDriversBtn = $("refreshNearbyDriversBtn");
   const logoutBtn = $("logoutBtn");
   const backBtn = $("backBtn");
   const waiveTripBtn = $("waiveTripBtn");
@@ -1501,6 +1637,10 @@ function initTripDetailPage() {
 
   refreshBtn?.addEventListener("click", async () => {
     await loadTripDetailPage();
+  });
+
+  refreshNearbyDriversBtn?.addEventListener("click", async () => {
+    await loadNearbyDriversForCurrentTrip();
   });
 
   logoutBtn?.addEventListener("click", () => {
