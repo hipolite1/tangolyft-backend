@@ -180,3 +180,41 @@ select:focus {
   background: #0f172a;
   color: #ffffff;
 }
+
+/* Earnings collapsible panel */
+.earnings-panel {
+  margin-top: 10px;
+}
+
+.earnings-panel summary {
+  cursor: pointer;
+  background: #eef2ff;
+  color: #0f172a;
+  padding: 16px 18px;
+  border-radius: 14px;
+  font-size: 22px;
+  font-weight: 900;
+  list-style: none;
+}
+
+.earnings-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.earnings-panel summary::after {
+  content: "Show";
+  float: right;
+  font-size: 16px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+
+.earnings-panel[open] summary::after {
+  content: "Hide";
+}
+
+.earnings-content {
+  margin-top: 20px;
+}

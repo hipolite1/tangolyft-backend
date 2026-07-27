@@ -284,25 +284,17 @@ async function loadDriverInbox() {
 
     const riderPhone = trip.rider?.phone || trip.riderPhone || "";
 
-    const navigationButtons = `
-      <div class="trip-navigation">
-        ${
-          pickupMapsUrl
-            ? `<a class="btn-primary nav-link-btn" href="${pickupMapsUrl}" target="_blank" rel="noopener">Navigate to Pickup</a>`
-            : ""
-        }
-        ${
-          dropoffMapsUrl
-            ? `<a class="btn-primary nav-link-btn" href="${dropoffMapsUrl}" target="_blank" rel="noopener">Navigate to Drop-off</a>`
-            : ""
-        }
-        ${
-          riderPhone
-            ? `<a class="btn-secondary nav-link-btn" href="tel:${riderPhone}">Call Rider</a>`
-            : ""
-        }
-      </div>
-    `;
+    const pickupNavButton = pickupMapsUrl
+      ? `<a class="btn-primary nav-link-btn" href="${pickupMapsUrl}" target="_blank" rel="noopener">Navigate to Pickup</a>`
+      : "";
+
+    const dropoffNavButton = dropoffMapsUrl
+      ? `<a class="btn-primary nav-link-btn" href="${dropoffMapsUrl}" target="_blank" rel="noopener">Navigate to Drop-off</a>`
+      : "";
+
+    const callRiderButton = riderPhone
+      ? `<a class="btn-secondary nav-link-btn" href="tel:${riderPhone}">Call Rider</a>`
+      : "";
 
     const hasAssignedDriver = Boolean(
       trip.driverId ||
@@ -330,6 +322,11 @@ async function loadDriverInbox() {
 
     if (displayStatus === "ACCEPTED") {
       actionButtons = `
+        <div class="trip-navigation">
+          ${pickupNavButton}
+          ${callRiderButton}
+        </div>
+
         <button class="btn-primary trip-action-btn" data-action="start" data-trip-id="${trip.id}">
           Start Trip
         </button>
@@ -338,6 +335,11 @@ async function loadDriverInbox() {
 
     if (trip.status === "STARTED") {
       actionButtons = `
+        <div class="trip-navigation">
+          ${dropoffNavButton}
+          ${callRiderButton}
+        </div>
+
         <button class="btn-primary trip-action-btn" data-action="complete" data-trip-id="${trip.id}" style="background:green;">
           Complete Trip
         </button>
@@ -368,7 +370,6 @@ async function loadDriverInbox() {
         <p><strong>Rider:</strong> ${trip.rider?.phone || trip.riderPhone || "-"}</p>
         <p><strong>Pickup:</strong> ${trip.pickupAddress || "-"}</p>
         <p><strong>Drop-off:</strong> ${trip.dropoffAddress || "-"}</p>
-        ${navigationButtons}
         <p><strong>City:</strong> ${trip.city}</p>
         <p><strong>Service:</strong> ${
   trip.serviceType === "BIKE_DELIVERY"
