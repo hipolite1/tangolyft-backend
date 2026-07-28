@@ -223,6 +223,14 @@ if (!rider) {
         Number((straightLineKm * 1.35).toFixed(2)),
       );
 
+      if (distanceKm > 80) {
+        return {
+          ok: false,
+          message:
+            "Pickup and drop-off appear too far apart for the Abuja MVP service area. Please check the pickup GPS and drop-off location.",
+        };
+      }
+
       const durationMin = Math.max(
         5,
         Math.round(distanceKm * 4),

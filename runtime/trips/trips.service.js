@@ -181,6 +181,12 @@ let TripsService = class TripsService {
             const city = dto.city ?? "ABUJA";
             const straightLineKm = this.haversineKm(dto.pickupLat, dto.pickupLng, dto.dropoffLat, dto.dropoffLng);
             const distanceKm = Math.max(1, Number((straightLineKm * 1.35).toFixed(2)));
+            if (distanceKm > 80) {
+                return {
+                    ok: false,
+                    message: "Pickup and drop-off appear too far apart for the Abuja MVP service area. Please check the pickup GPS and drop-off location.",
+                };
+            }
             const durationMin = Math.max(5, Math.round(distanceKm * 4));
             const paymentMode = dto.paymentMode ?? client_1.PaymentMode.PAY_ON_DROPOFF;
             const policy = await this.prisma.farePolicy.findFirst({
