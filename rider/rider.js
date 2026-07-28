@@ -241,14 +241,20 @@ async function setPickupLocation() {
       throw new Error(data.message || "Failed to set pickup location");
     }
 
+    const location = data.location || data.result;
+
+    if (!location || location.lat === undefined || location.lng === undefined) {
+      throw new Error("Pickup location was not returned correctly. Please try a more specific address.");
+    }
+
     pickupLocation = {
-      lat: data.location.lat,
-      lng: data.location.lng,
+      lat: location.lat,
+      lng: location.lng,
       accuracy: null,
       source: "ADDRESS",
     };
 
-    const formattedAddress = data.location.formattedAddress || address;
+    const formattedAddress = location.formattedAddress || location.address || address;
 
     const pickupInput = document.getElementById("pickupAddress");
     if (pickupInput) {
