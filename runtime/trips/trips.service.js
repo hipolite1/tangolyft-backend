@@ -419,11 +419,7 @@ let TripsService = class TripsService {
                 },
             });
             const ranked = trips
-                .filter((trip) => {
-                if (trip.driverId === driver.id)
-                    return true;
-                return serviceTypeMatchesDriver(driver.driverType, trip.serviceType);
-            })
+                .filter((trip) => trip.driverId === driver.id)
                 .filter((trip) => trip.pickupLat != null && trip.pickupLng != null)
                 .map((trip) => {
                 let distanceKm = null;
