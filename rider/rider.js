@@ -57,7 +57,7 @@ function capturePickupLocation() {
 
       if (btn) {
         btn.disabled = false;
-        btn.textContent = "Update Current Location";
+        btn.textContent = "Update Pickup Location";
       }
     },
     (error) => {
@@ -241,20 +241,19 @@ async function setPickupLocation() {
       throw new Error(data.message || "Failed to set pickup location");
     }
 
-    const location = data.location || data.result;
-
-    if (!location || location.lat === undefined || location.lng === undefined) {
+    if (data.lat === undefined || data.lng === undefined) {
       throw new Error("Pickup location was not returned correctly. Please try a more specific address.");
     }
 
     pickupLocation = {
-      lat: location.lat,
-      lng: location.lng,
-      accuracy: null,
+      lat: data.lat,
+      lng: data.lng,
+      address: data.address,
+      placeId: data.placeId,
       source: "ADDRESS",
     };
 
-    const formattedAddress = location.formattedAddress || location.address || address;
+    const formattedAddress = data.address || address;
 
     const pickupInput = document.getElementById("pickupAddress");
     if (pickupInput) {
@@ -269,7 +268,7 @@ async function setPickupLocation() {
     showMessage("Pickup location set successfully.", "success");
 
     if (btn) {
-      btn.textContent = "Update Current Location";
+      btn.textContent = "Update Pickup Location";
     }
   } catch (err) {
     console.error(err);
