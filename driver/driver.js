@@ -308,6 +308,14 @@ function showNewTripVisualAlert(trip) {
   }
 }
 
+function hideNewTripVisualAlert() {
+  const banner = document.getElementById("tripAlertBanner");
+  if (banner) {
+    banner.style.display = "none";
+    banner.textContent = "";
+  }
+}
+
 async function requestDriverNotificationPermission() {
   try {
     if ("Notification" in window && Notification.permission === "default") {
@@ -561,6 +569,7 @@ async function tripAction(path, successMessage) {
 async function acceptTrip(tripId) {
   try {
     await tripAction(`/trips/${tripId}/accept`, "Trip accepted");
+    hideNewTripVisualAlert();
   } catch (err) {
     console.error(err);
     showMessage(err.message, "error");
@@ -570,6 +579,7 @@ async function acceptTrip(tripId) {
 async function startTrip(tripId) {
   try {
     await tripAction(`/trips/${tripId}/start`, "Trip started");
+    hideNewTripVisualAlert();
   } catch (err) {
     console.error(err);
     showMessage(err.message, "error");
@@ -579,6 +589,7 @@ async function startTrip(tripId) {
 async function completeTrip(tripId) {
   try {
     await tripAction(`/trips/${tripId}/complete`, "Trip completed");
+    hideNewTripVisualAlert();
 
     const tripCard = document.getElementById("tripCard");
     if (tripCard) {
