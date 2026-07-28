@@ -465,6 +465,14 @@ async function startTrip(tripId) {
 async function completeTrip(tripId) {
   try {
     await tripAction(`/trips/${tripId}/complete`, "Trip completed");
+
+    const tripCard = document.getElementById("tripCard");
+    if (tripCard) {
+      tripCard.innerHTML = `<p>No assigned trip at the moment.</p>`;
+    }
+
+    await loadDriverWallet();
+    await loadWalletTransactions();
   } catch (err) {
     console.error(err);
     showMessage(err.message, "error");
