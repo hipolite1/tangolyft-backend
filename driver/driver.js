@@ -227,45 +227,78 @@ function hasValidCoords(lat, lng) {
 }
 
 let lastSeenAssignedTripId = null;
-let driverAlertAudio = null;
 let driverAlertUnlocked = false;
+let driverAudioContext = null;
 
 function unlockDriverAlertSound() {
   try {
-    if (!driverAlertAudio) {
-      driverAlertAudio = new Audio(
-        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
-      );
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+
+    if (!AudioContext) {
+      console.warn("Web Audio API not supported.");
+      return;
     }
 
-    driverAlertAudio.volume = 1;
+    if (!driverAudioContext) {
+      driverAudioContext = new AudioContext();
+    }
+
+    if (driverAudioContext.state === "suspended") {
+      driverAudioContext.resume();
+    }
+
     driverAlertUnlocked = true;
+    showMessage("Trip alerts enabled. Keep this page open while online.", "success");
+
+    const btn = document.getElementById("enableTripAlertsBtn");
+    if (btn) {
+      btn.textContent = "Trip Alerts Enabled";
+      btn.disabled = true;
+    }
   } catch (err) {
     console.error("Could not unlock driver alert sound", err);
   }
 }
 
-function playDriverNewTripAlert() {
+function playDriverBeep() {
   try {
-    if (!driverAlertAudio) {
-      driverAlertAudio = new Audio(
-        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
-      );
-    }
+    if (!driverAlertUnlocked || !driverAudioContext) return;
 
-    if (driverAlertUnlocked) {
-      driverAlertAudio.currentTime = 0;
-      driverAlertAudio.play().catch((err) => {
-        console.warn("Driver alert sound blocked by browser.", err);
-      });
-    }
+    const oscillator = driverAudioContext.createOscillator();
+    const gainNode = driverAudioContext.createGain();
+
+    oscillator.type = "sine";
+    oscillator.frequency.value = 880;
+
+    gainNode.gain.setValueAtTime(0.001, driverAudioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.5, driverAudioContext.currentTime + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, driverAudioContext.currentTime + 0.6);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(driverAudioContext.destination);
+
+    oscillator.start();
+    oscillator.stop(driverAudioContext.currentTime + 0.65);
   } catch (err) {
-    console.error("Could not play driver alert sound", err);
+    console.error("Could not play driver beep", err);
   }
+}
+
+function playDriverNewTripAlert() {
+  playDriverBeep();
+
+  setTimeout(playDriverBeep, 700);
+  setTimeout(playDriverBeep, 1400);
 }
 
 function showNewTripVisualAlert(trip) {
   const messageText = `New trip assigned. Pickup: ${trip.pickupAddress || "-"} → Drop-off: ${trip.dropoffAddress || "-"}`;
+
+  const banner = document.getElementById("tripAlertBanner");
+  if (banner) {
+    banner.style.display = "block";
+    banner.textContent = `🔔 NEW TRIP ASSIGNED — ${trip.pickupAddress || "-"} → ${trip.dropoffAddress || "-"}`;
+  }
 
   showMessage(messageText, "success");
 
@@ -809,6 +842,13 @@ async function requestDriverCashout() {
 }
 
 requestCashoutBtn?.addEventListener("click", requestDriverCashout);
+
+document
+  .getElementById("enableTripAlertsBtn")
+  ?.addEventListener("click", async () => {
+    unlockDriverAlertSound();
+    await requestDriverNotificationPermission();
+  });
 
 async function initDriverDashboard() {
   try {

@@ -218,3 +218,25 @@ select:focus {
 .earnings-content {
   margin-top: 20px;
 }
+
+
+.trip-alert-banner {
+  padding: 18px;
+  margin: 16px 0;
+  border-radius: 14px;
+  background: #fff3cd;
+  border: 2px solid #ffcc00;
+  font-size: 22px;
+  font-weight: 800;
+  color: #7a5200;
+  animation: tripAlertPulse 1s infinite alternate;
+}
+
+@keyframes tripAlertPulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.02);
+  }
+}
