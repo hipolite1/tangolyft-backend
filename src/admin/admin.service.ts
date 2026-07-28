@@ -356,6 +356,7 @@ export class AdminService {
 
     const now = Date.now();
     const maxAgeMs = 30 * 60 * 1000;
+    const maxNearbyDistanceKm = 50;
 
     const drivers = await this.prisma.driver.findMany({
       where: {
@@ -411,10 +412,10 @@ export class AdminService {
         };
       })
       .filter((driver) => driver.matchesServiceType)
+      .filter((driver) => driver.isFresh)
       .filter((driver) => driver.distanceKm !== null)
+      .filter((driver) => (driver.distanceKm ?? Number.MAX_VALUE) <= maxNearbyDistanceKm)
       .sort((a, b) => {
-        if (a.isFresh && !b.isFresh) return -1;
-        if (!a.isFresh && b.isFresh) return 1;
         return (a.distanceKm ?? Number.MAX_VALUE) - (b.distanceKm ?? Number.MAX_VALUE);
       })
       .slice(0, 10);
