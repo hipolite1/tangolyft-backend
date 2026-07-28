@@ -471,6 +471,24 @@ export class AdminService {
     throw new BadRequestException("Driver is not approved");
   }
 
+  const activeDriverTrip = await this.prisma.trip.findFirst({
+    where: {
+      driverId: driver.id,
+      status: {
+        in: ["REQUESTED", "ACCEPTED", "STARTED"],
+      },
+    },
+    orderBy: {
+      requestedAt: "desc",
+    },
+  });
+
+  if (activeDriverTrip && activeDriverTrip.id !== tripId) {
+    throw new BadRequestException(
+      `Driver already has an active trip: ${activeDriverTrip.id}. Complete or cancel that trip before assigning a new one.`,
+    );
+  }
+
   const updated = await this.prisma.trip.update({
     where: { id: tripId },
     data: {
