@@ -38,7 +38,7 @@ function capturePickupLocation() {
     btn.textContent = "Getting location...";
   }
 
-  updatePickupLocationStatus("Requesting pickup GPS location...");
+  updatePickupLocationStatus("Requesting your current device location for pickup...");
 
   navigator.geolocation.getCurrentPosition(
     (position) => {
@@ -49,15 +49,15 @@ function capturePickupLocation() {
       };
 
       updatePickupLocationStatus(
-        `Pickup GPS captured. Accuracy: about ${Math.round(position.coords.accuracy)} meters.`,
+        `Current pickup location captured. Accuracy: about ${Math.round(position.coords.accuracy)} meters.`,
         "success",
       );
 
-      showMessage("Pickup location captured successfully.", "success");
+      showMessage("Current device location saved as pickup. Only use this if you are physically at the pickup point.", "success");
 
       if (btn) {
         btn.disabled = false;
-        btn.textContent = "Update Pickup Location";
+        btn.textContent = "Update Current Location";
       }
     },
     (error) => {
@@ -73,7 +73,7 @@ function capturePickupLocation() {
 
       if (btn) {
         btn.disabled = false;
-        btn.textContent = "Use My Current Location for Pickup";
+        btn.textContent = "Use My Current Location";
       }
     },
     {
@@ -198,6 +198,90 @@ function showPrepaidTripActions(trip) {
 }
 
 
+async function setPickupLocation() {
+  const token = getRiderToken();
+  const address = document.getElementById("pickupAddress")?.value.trim();
+  const city = document.getElementById("city")?.value || "ABUJA";
+  const btn = document.getElementById("setPickupLocationBtn");
+
+  if (!token) {
+    showMessage("Please login before setting pickup location.", "error");
+    return;
+  }
+
+  if (!address) {
+    showMessage("Enter a pickup address or landmark first.", "error");
+    updatePickupLocationStatus("Pickup address or landmark is required.", "error");
+    return;
+  }
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Setting pickup...";
+    }
+
+    updatePickupLocationStatus("Searching pickup location...");
+
+    const res = await fetch(`${API_BASE}/maps/geocode`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        address,
+        city,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data.message || "Failed to set pickup location");
+    }
+
+    pickupLocation = {
+      lat: data.location.lat,
+      lng: data.location.lng,
+      accuracy: null,
+      source: "ADDRESS",
+    };
+
+    const formattedAddress = data.location.formattedAddress || address;
+
+    const pickupInput = document.getElementById("pickupAddress");
+    if (pickupInput) {
+      pickupInput.value = formattedAddress;
+    }
+
+    updatePickupLocationStatus(
+      `Pickup set: ${formattedAddress}`,
+      "success",
+    );
+
+    showMessage("Pickup location set successfully.", "success");
+
+    if (btn) {
+      btn.textContent = "Update Current Location";
+    }
+  } catch (err) {
+    console.error(err);
+    pickupLocation = null;
+
+    updatePickupLocationStatus(
+      err.message || "Pickup location was not set. Please check the address and try again.",
+      "error",
+    );
+
+    showMessage(err.message || "Failed to set pickup location.", "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+    }
+  }
+}
+
 async function setDropoffLocation() {
   const token = getRiderToken();
   const address = document.getElementById("dropoffAddress")?.value.trim();
@@ -299,6 +383,10 @@ document
   ?.addEventListener("click", capturePickupLocation);
 
 document
+  .getElementById("setPickupLocationBtn")
+  ?.addEventListener("click", setPickupLocation);
+
+document
   .getElementById("setDropoffLocationBtn")
   ?.addEventListener("click", setDropoffLocation);
 
@@ -321,8 +409,8 @@ requestTripBtn?.addEventListener("click", async () => {
   }
 
   if (!pickupLocation) {
-    showMessage("Please tap Use My Current Location for Pickup before requesting the trip.", "error");
-    updatePickupLocationStatus("Pickup GPS is required before requesting a trip.", "error");
+    showMessage("Please set pickup location before requesting the trip.", "error");
+    updatePickupLocationStatus("Pickup location is required. Use current location or set pickup by address.", "error");
     return;
   }
 
