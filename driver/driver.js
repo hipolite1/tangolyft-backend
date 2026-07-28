@@ -248,12 +248,11 @@ function unlockDriverAlertSound() {
     }
 
     driverAlertUnlocked = true;
-    showMessage("Trip alerts enabled. Keep this page open while online.", "success");
 
-    const btn = document.getElementById("enableTripAlertsBtn");
-    if (btn) {
-      btn.textContent = "Trip Alerts Enabled";
-      btn.disabled = true;
+    const alertStatus = document.getElementById("tripAlertsStatus");
+    if (alertStatus) {
+      alertStatus.style.display = "block";
+      alertStatus.textContent = "Trip alerts enabled. Keep this page open while online.";
     }
   } catch (err) {
     console.error("Could not unlock driver alert sound", err);
@@ -842,13 +841,6 @@ async function requestDriverCashout() {
 }
 
 requestCashoutBtn?.addEventListener("click", requestDriverCashout);
-
-document
-  .getElementById("enableTripAlertsBtn")
-  ?.addEventListener("click", async () => {
-    unlockDriverAlertSound();
-    await requestDriverNotificationPermission();
-  });
 
 async function initDriverDashboard() {
   try {
