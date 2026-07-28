@@ -356,21 +356,7 @@ let TripsService = class TripsService {
         }
     }
     async expireStaleRequestedTrips() {
-        const cutoff = new Date(Date.now() - 10 * 60 * 1000);
-        const result = await this.prisma.trip.updateMany({
-            where: {
-                status: client_1.TripStatus.REQUESTED,
-                driverId: null,
-                requestedAt: { lt: cutoff },
-            },
-            data: {
-                status: client_1.TripStatus.CANCELLED,
-                cancelledBy: "ADMIN",
-                cancelReason: "System timeout: no driver accepted in time",
-                cancelledAt: new Date(),
-            },
-        });
-        return result.count;
+        return 0;
     }
     async inbox(user) {
         try {

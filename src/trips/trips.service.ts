@@ -426,23 +426,10 @@ async tripStatusById(tripId: string) {
   }
 
   private async expireStaleRequestedTrips() {
-    const cutoff = new Date(Date.now() - 10 * 60 * 1000);
-
-    const result = await this.prisma.trip.updateMany({
-      where: {
-        status: TripStatus.REQUESTED,
-        driverId: null,
-        requestedAt: { lt: cutoff },
-      },
-      data: {
-        status: TripStatus.CANCELLED,
-        cancelledBy: "ADMIN",
-        cancelReason: "System timeout: no driver accepted in time",
-        cancelledAt: new Date(),
-      },
-    });
-
-    return result.count;
+    // MVP manual-dispatch mode:
+    // Do not auto-cancel rider trips.
+    // Admin/operator will manually cancel or reassign trips after speaking with rider/driver.
+    return 0;
   }
 
 async inbox(user: any) {
