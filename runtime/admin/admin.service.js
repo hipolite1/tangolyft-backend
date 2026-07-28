@@ -386,8 +386,9 @@ let AdminService = class AdminService {
             where: { id: tripId },
             data: {
                 driverId: driver.id,
-                status: "ACCEPTED",
-                acceptedAt: new Date(),
+                status: "REQUESTED",
+                matchedAt: new Date(),
+                acceptedAt: null,
             },
         });
         return {

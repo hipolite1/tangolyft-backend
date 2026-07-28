@@ -316,13 +316,17 @@ async function loadDriverInbox() {
     let displayStatus = trip.status;
 
     if (trip.status === "REQUESTED" && hasAssignedDriver) {
-      displayStatus = "ACCEPTED";
+      displayStatus = "ASSIGNED_PENDING";
     }
 
     let actionButtons = "";
 
-    if (displayStatus === "REQUESTED") {
+    if (displayStatus === "REQUESTED" || displayStatus === "ASSIGNED_PENDING") {
       actionButtons = `
+        <div class="trip-navigation">
+          ${callRiderButton}
+        </div>
+
         <button class="btn-primary trip-action-btn" data-action="accept" data-trip-id="${trip.id}">
           Accept Trip
         </button>
@@ -390,8 +394,10 @@ async function loadDriverInbox() {
 <p><strong>Status:</strong> ${
   displayStatus === "REQUESTED"
     ? "Waiting for Driver"
-    : displayStatus === "ACCEPTED"
-      ? "Driver Assigned"
+    : displayStatus === "ASSIGNED_PENDING"
+      ? "New Trip Assigned - Please Accept"
+      : displayStatus === "ACCEPTED"
+        ? "Driver Accepted"
       : displayStatus === "STARTED"
         ? "Trip In Progress"
         : displayStatus === "COMPLETED"

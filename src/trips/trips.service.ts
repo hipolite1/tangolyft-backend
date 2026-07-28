@@ -484,7 +484,7 @@ async inbox(user: any) {
           {
             driverId: driver.id,
             status: {
-              in: [TripStatus.ACCEPTED, TripStatus.STARTED],
+              in: [TripStatus.REQUESTED, TripStatus.ACCEPTED, TripStatus.STARTED],
             },
           },
         ],
@@ -584,8 +584,12 @@ async inbox(user: any) {
         return { ok: false, message: "Trip is not REQUESTED" };
       }
 
-      if (trip.driverId) {
-        return { ok: false, message: "Trip has already been accepted" };
+      if (trip.driverId && trip.driverId !== driver.id) {
+        return { ok: false, message: "Trip is assigned to another driver" };
+      }
+
+      if (!trip.driverId) {
+        return { ok: false, message: "Trip has not been assigned by admin yet" };
       }
 
       if (trip.city !== driver.city) {

@@ -405,7 +405,7 @@ let TripsService = class TripsService {
                         {
                             driverId: driver.id,
                             status: {
-                                in: [client_1.TripStatus.ACCEPTED, client_1.TripStatus.STARTED],
+                                in: [client_1.TripStatus.REQUESTED, client_1.TripStatus.ACCEPTED, client_1.TripStatus.STARTED],
                             },
                         },
                     ],
@@ -486,8 +486,11 @@ let TripsService = class TripsService {
             if (trip.status !== client_1.TripStatus.REQUESTED) {
                 return { ok: false, message: "Trip is not REQUESTED" };
             }
-            if (trip.driverId) {
-                return { ok: false, message: "Trip has already been accepted" };
+            if (trip.driverId && trip.driverId !== driver.id) {
+                return { ok: false, message: "Trip is assigned to another driver" };
+            }
+            if (!trip.driverId) {
+                return { ok: false, message: "Trip has not been assigned by admin yet" };
             }
             if (trip.city !== driver.city) {
                 return { ok: false, message: "Trip city does not match driver city" };
