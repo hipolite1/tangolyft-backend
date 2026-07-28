@@ -177,6 +177,9 @@ async function driverPost(path) {
 
 goOnlineBtn?.addEventListener("click", async () => {
   try {
+    unlockDriverAlertSound();
+    await requestDriverNotificationPermission();
+
     const data = await driverPost("/driver/go-online");
 
     setDriverAvailabilityUi(data.driver.availability);
@@ -221,6 +224,66 @@ goOfflineBtn?.addEventListener("click", async () => {
 
 function hasValidCoords(lat, lng) {
   return lat !== undefined && lat !== null && lng !== undefined && lng !== null;
+}
+
+let lastSeenAssignedTripId = null;
+let driverAlertAudio = null;
+let driverAlertUnlocked = false;
+
+function unlockDriverAlertSound() {
+  try {
+    if (!driverAlertAudio) {
+      driverAlertAudio = new Audio(
+        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
+      );
+    }
+
+    driverAlertAudio.volume = 1;
+    driverAlertUnlocked = true;
+  } catch (err) {
+    console.error("Could not unlock driver alert sound", err);
+  }
+}
+
+function playDriverNewTripAlert() {
+  try {
+    if (!driverAlertAudio) {
+      driverAlertAudio = new Audio(
+        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
+      );
+    }
+
+    if (driverAlertUnlocked) {
+      driverAlertAudio.currentTime = 0;
+      driverAlertAudio.play().catch((err) => {
+        console.warn("Driver alert sound blocked by browser.", err);
+      });
+    }
+  } catch (err) {
+    console.error("Could not play driver alert sound", err);
+  }
+}
+
+function showNewTripVisualAlert(trip) {
+  const messageText = `New trip assigned. Pickup: ${trip.pickupAddress || "-"} → Drop-off: ${trip.dropoffAddress || "-"}`;
+
+  showMessage(messageText, "success");
+
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification("New TangoLyft Trip Assigned", {
+      body: messageText,
+    });
+  }
+}
+
+async function requestDriverNotificationPermission() {
+  try {
+    if ("Notification" in window && Notification.permission === "default") {
+      await Notification.requestPermission();
+    }
+  } catch (err) {
+    console.warn("Notification permission not available.", err);
+  }
 }
 
 function googleMapsDirectionsUrl(lat, lng, fallbackAddress) {
@@ -278,6 +341,25 @@ async function loadDriverInbox() {
     }
 
     const trip = trips[0];
+
+    const hasAssignedDriverForAlert = Boolean(
+      trip.driverId ||
+        trip.driver?.id ||
+        trip.driver?.phone ||
+        trip.driverPhone ||
+        trip.driver,
+    );
+
+    const isNewAssignedTrip =
+      trip.status === "REQUESTED" &&
+      hasAssignedDriverForAlert &&
+      trip.id !== lastSeenAssignedTripId;
+
+    if (isNewAssignedTrip) {
+      lastSeenAssignedTripId = trip.id;
+      playDriverNewTripAlert();
+      showNewTripVisualAlert(trip);
+    }
 
     const pickupMapsUrl = googleMapsDirectionsUrl(
       trip.pickupLat,
@@ -735,6 +817,14 @@ async function initDriverDashboard() {
     await loadDriverInbox();
     await loadDriverWallet();
     await loadWalletTransactions();
+
+    setInterval(async () => {
+      try {
+        await loadDriverInbox();
+      } catch (err) {
+        console.error("Failed to auto-refresh driver inbox", err);
+      }
+    }, 10000);
   } catch (err) {
     console.error(err);
     showMessage(err.message || "Failed to load dashboard", "error");
