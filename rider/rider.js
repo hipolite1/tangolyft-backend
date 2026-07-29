@@ -165,7 +165,7 @@ function showPrepaidTripActions(trip) {
         data-trip-id="${trip.id}"
         style="margin-top:12px;"
       >
-        Pay Now
+        Pay Now / Retry Payment
       </button>
 
       <a
@@ -193,7 +193,7 @@ function showPrepaidTripActions(trip) {
     await startPaystackPayment(tripId);
 
     payBtn.disabled = false;
-    payBtn.textContent = "Pay Now";
+    payBtn.textContent = "Pay Now / Retry Payment";
   });
 }
 
@@ -663,13 +663,13 @@ function renderTripStatus(trip) {
 
       ${
         showPayNow
-          ? `<button class="btn-primary" id="payNowBtn" data-trip-id="${trip.id}" style="margin-top:12px;">Pay Now</button>`
+          ? `<button class="btn-primary" id="payNowBtn" data-trip-id="${trip.id}" style="margin-top:12px;">Pay Now / Retry Payment</button>`
           : ""
       }
 
       ${
         showVerifyButton
-          ? `<button class="btn-primary" id="verifyPaymentBtn" style="margin-top:12px;">Verify Payment</button>`
+          ? `<button class="btn-primary" id="verifyPaymentBtn" style="margin-top:12px;">Verify Completed Payment</button>`
           : ""
       }
 
@@ -805,7 +805,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (err) {
       console.error(err);
       showMessage(
-        "Payment confirmation is still pending. Please click Check Status or try Pay Now again.",
+        "Payment confirmation is still pending. Please click Check Status or try Pay Now / Retry Payment again.",
         "error",
       );
     }
