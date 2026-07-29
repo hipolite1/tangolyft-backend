@@ -14,6 +14,7 @@ const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
 const prisma_service_1 = require("../prisma/prisma.service");
 const fare_1 = require("../fare/fare");
+const phone_1 = require("../common/phone");
 function serviceTypeMatchesDriver(driverType, serviceType) {
     if (serviceType === client_1.ServiceType.CAR_RIDE)
         return driverType === "CAR_DRIVER";
@@ -144,6 +145,7 @@ let TripsService = class TripsService {
             if (!dto?.phone) {
                 return { ok: false, message: "phone is required" };
             }
+            const phone = (0, phone_1.normalizePhone)(dto.phone);
             let rider = user?.sub
                 ? await this.prisma.user.findUnique({
                     where: { id: user.sub },
@@ -151,13 +153,13 @@ let TripsService = class TripsService {
                 : null;
             if (!rider) {
                 rider = await this.prisma.user.findUnique({
-                    where: { phone: dto.phone },
+                    where: { phone },
                 });
             }
             if (!rider) {
                 rider = await this.prisma.user.create({
                     data: {
-                        phone: dto.phone,
+                        phone,
                         role: "RIDER",
                     },
                 });
@@ -266,10 +268,7 @@ let TripsService = class TripsService {
     }
     async riderStatus(rawPhone) {
         try {
-            const phone = String(rawPhone || "")
-                .trim()
-                .replace(/\s+/g, "")
-                .replace(/-/g, "");
+            const phone = (0, phone_1.normalizePhone)(rawPhone);
             if (!phone) {
                 return { ok: false, message: "phone is required" };
             }

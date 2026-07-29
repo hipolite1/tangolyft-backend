@@ -18,20 +18,22 @@ const prisma_service_1 = require("../prisma/prisma.service");
 const require_role_1 = require("../auth/require-role");
 const current_user_decorator_1 = require("../auth/current-user.decorator");
 const update_location_dto_1 = require("./dto/update-location.dto");
+const phone_1 = require("../common/phone");
 let DriverController = class DriverController {
     constructor(prisma) {
         this.prisma = prisma;
     }
     async apply(body) {
         const { fullName, phone, email, city, vehicleType } = body || {};
-        if (!fullName || !phone || !city || !vehicleType) {
+        const normalizedPhone = (0, phone_1.normalizePhone)(phone);
+        if (!fullName || !normalizedPhone || !city || !vehicleType) {
             return {
                 ok: false,
                 message: "fullName, phone, city and vehicleType are required",
             };
         }
         const existingUser = await this.prisma.user.findUnique({
-            where: { phone },
+            where: { phone: normalizedPhone },
         });
         if (existingUser) {
             return {
@@ -41,7 +43,7 @@ let DriverController = class DriverController {
         }
         const user = await this.prisma.user.create({
             data: {
-                phone,
+                phone: normalizedPhone,
                 role: "DRIVER",
             },
         });

@@ -11,6 +11,7 @@ import {
   WalletTxType,
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
+import { normalizePhone } from "../common/phone";
 
 @Injectable()
 export class AdminService {
@@ -439,7 +440,9 @@ export class AdminService {
     throw new BadRequestException("Invalid tripId");
   }
 
-  if (!driverPhone || driverPhone.trim().length < 5) {
+  const normalizedDriverPhone = normalizePhone(driverPhone);
+
+  if (!normalizedDriverPhone || normalizedDriverPhone.length < 5) {
     throw new BadRequestException("Driver phone is required");
   }
 
@@ -452,7 +455,7 @@ export class AdminService {
   }
 
   const user = await this.prisma.user.findUnique({
-    where: { phone: driverPhone.trim() },
+    where: { phone: normalizedDriverPhone },
   });
 
   if (!user) {

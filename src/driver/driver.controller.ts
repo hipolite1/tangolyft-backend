@@ -3,6 +3,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { RequireRole } from "../auth/require-role";
 import { CurrentUser } from "../auth/current-user.decorator";
 import { UpdateLocationDto } from "./dto/update-location.dto";
+import { normalizePhone } from "../common/phone";
 
 @Controller("driver")
 export class DriverController {
@@ -12,8 +13,9 @@ export class DriverController {
   @Post("apply")
   async apply(@Body() body: any) {
     const { fullName, phone, email, city, vehicleType } = body || {};
+    const normalizedPhone = normalizePhone(phone);
 
-    if (!fullName || !phone || !city || !vehicleType) {
+    if (!fullName || !normalizedPhone || !city || !vehicleType) {
       return {
         ok: false,
         message: "fullName, phone, city and vehicleType are required",
@@ -21,7 +23,7 @@ export class DriverController {
     }
 
     const existingUser = await this.prisma.user.findUnique({
-      where: { phone },
+      where: { phone: normalizedPhone },
     });
 
     if (existingUser) {
@@ -33,7 +35,7 @@ export class DriverController {
 
     const user = await this.prisma.user.create({
       data: {
-        phone,
+        phone: normalizedPhone,
         role: "DRIVER",
       },
     });

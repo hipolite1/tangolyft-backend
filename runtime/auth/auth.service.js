@@ -47,19 +47,7 @@ const common_1 = require("@nestjs/common");
 const jwt_1 = require("./jwt");
 const prisma_service_1 = require("../prisma/prisma.service");
 const bcrypt = __importStar(require("bcrypt"));
-function normalizePhone(input) {
-    const raw = input.trim().replace(/\s+/g, "").replace(/-/g, "");
-    if (raw.startsWith("+234")) {
-        return raw.slice(1);
-    }
-    if (raw.startsWith("234")) {
-        return raw;
-    }
-    if (raw.startsWith("0") && raw.length === 11) {
-        return `234${raw.slice(1)}`;
-    }
-    return raw;
-}
+const phone_1 = require("../common/phone");
 let AuthService = class AuthService {
     constructor(prisma) {
         this.prisma = prisma;
@@ -76,7 +64,7 @@ let AuthService = class AuthService {
         return (0, jwt_1.signJwt)({ sub: userId, role }, jwt_1.DEFAULT_EXPIRES_IN);
     }
     async requestOtp(rawPhone) {
-        const phone = normalizePhone(rawPhone);
+        const phone = (0, phone_1.normalizePhone)(rawPhone);
         const otp = this.otpDevMode()
             ? "123456"
             : String(Math.floor(100000 + Math.random() * 900000));
@@ -108,7 +96,7 @@ let AuthService = class AuthService {
         };
     }
     async verifyOtp(rawPhone, otp) {
-        const phone = normalizePhone(rawPhone);
+        const phone = (0, phone_1.normalizePhone)(rawPhone);
         const now = new Date();
         console.log("DB_URL_CHECK", process.env.DATABASE_URL);
         console.log("VERIFY_PHONE_LOOKUP", phone);

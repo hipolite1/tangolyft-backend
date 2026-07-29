@@ -2,24 +2,7 @@ import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { signJwt, DEFAULT_EXPIRES_IN } from "./jwt";
 import { PrismaService } from "../prisma/prisma.service";
 import * as bcrypt from "bcrypt";
-
-function normalizePhone(input: string): string {
-  const raw = input.trim().replace(/\s+/g, "").replace(/-/g, "");
-
-  if (raw.startsWith("+234")) {
-    return raw.slice(1); // +2348011111112 -> 2348011111112
-  }
-
-  if (raw.startsWith("234")) {
-    return raw; // already canonical
-  }
-
-  if (raw.startsWith("0") && raw.length === 11) {
-    return `234${raw.slice(1)}`; // 08011111112 -> 2348011111112
-  }
-
-  return raw;
-}
+import { normalizePhone } from "../common/phone";
 
 @Injectable()
 export class AuthService {

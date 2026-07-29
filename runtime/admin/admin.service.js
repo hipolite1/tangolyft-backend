@@ -13,6 +13,7 @@ exports.AdminService = void 0;
 const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
 const prisma_service_1 = require("../prisma/prisma.service");
+const phone_1 = require("../common/phone");
 let AdminService = class AdminService {
     constructor(prisma) {
         this.prisma = prisma;
@@ -358,7 +359,8 @@ let AdminService = class AdminService {
         if (!tripId || tripId.length < 10) {
             throw new common_1.BadRequestException("Invalid tripId");
         }
-        if (!driverPhone || driverPhone.trim().length < 5) {
+        const normalizedDriverPhone = (0, phone_1.normalizePhone)(driverPhone);
+        if (!normalizedDriverPhone || normalizedDriverPhone.length < 5) {
             throw new common_1.BadRequestException("Driver phone is required");
         }
         const trip = await this.prisma.trip.findUnique({
@@ -368,7 +370,7 @@ let AdminService = class AdminService {
             throw new common_1.NotFoundException("Trip not found");
         }
         const user = await this.prisma.user.findUnique({
-            where: { phone: driverPhone.trim() },
+            where: { phone: normalizedDriverPhone },
         });
         if (!user) {
             throw new common_1.NotFoundException("Driver user not found for this phone");

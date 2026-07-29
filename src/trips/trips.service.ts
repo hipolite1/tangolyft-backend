@@ -11,6 +11,7 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { computeFare } from "../fare/fare";
 import { RequestTripDto } from "./dto/request-trip.dto";
+import { normalizePhone } from "../common/phone";
 
 function serviceTypeMatchesDriver(driverType: string, serviceType: ServiceType) {
   if (serviceType === ServiceType.CAR_RIDE) return driverType === "CAR_DRIVER";
@@ -166,6 +167,8 @@ export class TripsService {
   return { ok: false, message: "phone is required" };
 }
 
+const phone = normalizePhone(dto.phone);
+
 let rider = user?.sub
   ? await this.prisma.user.findUnique({
       where: { id: user.sub },
@@ -174,14 +177,14 @@ let rider = user?.sub
 
 if (!rider) {
   rider = await this.prisma.user.findUnique({
-    where: { phone: dto.phone },
+    where: { phone },
   });
 }
 
 if (!rider) {
   rider = await this.prisma.user.create({
     data: {
-      phone: dto.phone,
+      phone,
       role: "RIDER",
     },
   });
@@ -329,10 +332,7 @@ if (!rider) {
 
 async riderStatus(rawPhone: string) {
   try {
-    const phone = String(rawPhone || "")
-      .trim()
-      .replace(/\s+/g, "")
-      .replace(/-/g, "");
+    const phone = normalizePhone(rawPhone);
 
     if (!phone) {
       return { ok: false, message: "phone is required" };
