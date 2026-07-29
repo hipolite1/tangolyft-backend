@@ -283,28 +283,47 @@ let TripsService = class TripsService {
                     trip: null,
                 };
             }
-            const trip = await this.prisma.trip.findFirst({
+            const includeTripDetails = {
+                rider: true,
+                driver: {
+                    include: {
+                        user: true,
+                    },
+                },
+                delivery: true,
+                fare: true,
+                payment: true,
+            };
+            const activeTrip = await this.prisma.trip.findFirst({
+                where: {
+                    riderId: rider.id,
+                    status: {
+                        in: ["REQUESTED", "ACCEPTED", "STARTED"],
+                    },
+                },
+                orderBy: {
+                    requestedAt: "desc",
+                },
+                include: includeTripDetails,
+            });
+            if (activeTrip) {
+                return {
+                    ok: true,
+                    trip: activeTrip,
+                };
+            }
+            const latestTrip = await this.prisma.trip.findFirst({
                 where: {
                     riderId: rider.id,
                 },
                 orderBy: {
                     requestedAt: "desc",
                 },
-                include: {
-                    rider: true,
-                    driver: {
-                        include: {
-                            user: true,
-                        },
-                    },
-                    delivery: true,
-                    fare: true,
-                    payment: true,
-                },
+                include: includeTripDetails,
             });
             return {
                 ok: true,
-                trip,
+                trip: latestTrip,
             };
         }
         catch (e) {
