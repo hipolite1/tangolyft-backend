@@ -384,6 +384,14 @@ let AdminService = class AdminService {
         if (driver.kycStatus !== "APPROVED") {
             throw new common_1.BadRequestException("Driver is not approved");
         }
+        if (!this.serviceTypeMatchesDriver(String(driver.driverType), String(trip.serviceType))) {
+            const requiredDriverType = trip.serviceType === "BIKE_DELIVERY"
+                ? "Bike Courier"
+                : trip.serviceType === "CAR_RIDE"
+                    ? "Car Driver"
+                    : "matching driver";
+            throw new common_1.BadRequestException(`This trip requires a ${requiredDriverType}. Selected driver type is ${driver.driverType}.`);
+        }
         const activeDriverTrip = await this.prisma.trip.findFirst({
             where: {
                 driverId: driver.id,
