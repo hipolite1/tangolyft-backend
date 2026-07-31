@@ -234,6 +234,29 @@ let lastSeenAssignedTripId = null;
 let driverAlertUnlocked = false;
 let driverAudioContext = null;
 let pendingDriverAlert = false;
+let driverAlertTimers = [];
+
+function clearDriverAlertTimers() {
+  driverAlertTimers.forEach((timerId) => clearTimeout(timerId));
+  driverAlertTimers = [];
+}
+
+function primeDriverAlertSound() {
+  try {
+    if (!driverAudioContext || driverAudioContext.state !== "running") return;
+
+    const oscillator = driverAudioContext.createOscillator();
+    const gainNode = driverAudioContext.createGain();
+
+    gainNode.gain.setValueAtTime(0.00001, driverAudioContext.currentTime);
+    oscillator.connect(gainNode);
+    gainNode.connect(driverAudioContext.destination);
+    oscillator.start();
+    oscillator.stop(driverAudioContext.currentTime + 0.03);
+  } catch (err) {
+    console.warn("Could not prime driver alert sound", err);
+  }
+}
 
 async function unlockDriverAlertSound() {
   try {
@@ -253,6 +276,10 @@ async function unlockDriverAlertSound() {
     }
 
     driverAlertUnlocked = driverAudioContext.state === "running";
+
+    if (driverAlertUnlocked) {
+      primeDriverAlertSound();
+    }
 
     const alertStatus = document.getElementById("tripAlertsStatus");
     if (alertStatus && driverAlertUnlocked) {
@@ -311,16 +338,36 @@ function playDriverBeep() {
   }
 }
 
-function playDriverNewTripAlert() {
+async function playDriverNewTripAlert() {
+  clearDriverAlertTimers();
+
+  if (driverAudioContext && driverAudioContext.state === "suspended") {
+    try {
+      await driverAudioContext.resume();
+      driverAlertUnlocked = driverAudioContext.state === "running";
+    } catch (err) {
+      console.warn("Driver audio could not resume automatically", err);
+    }
+  }
+
   const played = playDriverBeep();
 
   if (!played) {
     pendingDriverAlert = true;
-    return;
+
+    const alertStatus = document.getElementById("tripAlertsStatus");
+    if (alertStatus) {
+      alertStatus.style.display = "block";
+      alertStatus.textContent =
+        "New trip received. Tap anywhere except Accept Trip to enable the alert sound.";
+    }
+    return false;
   }
 
-  setTimeout(playDriverBeep, 700);
-  setTimeout(playDriverBeep, 1400);
+  pendingDriverAlert = false;
+  driverAlertTimers.push(setTimeout(playDriverBeep, 700));
+  driverAlertTimers.push(setTimeout(playDriverBeep, 1400));
+  return true;
 }
 
 function showNewTripVisualAlert(trip) {
@@ -342,6 +389,8 @@ function showNewTripVisualAlert(trip) {
 }
 
 function hideNewTripVisualAlert() {
+  clearDriverAlertTimers();
+
   const banner = document.getElementById("tripAlertBanner");
   if (banner) {
     banner.style.display = "none";
@@ -436,7 +485,7 @@ async function loadDriverInbox() {
     if (isNewAssignedTrip) {
       lastSeenAssignedTripId = trip.id;
       showNewTripVisualAlert(trip);
-      playDriverNewTripAlert();
+      await playDriverNewTripAlert();
     } else if (trip.status !== "REQUESTED" || !hasAssignedDriverForAlert) {
       hideNewTripVisualAlert();
     }
@@ -648,6 +697,10 @@ document.addEventListener("click", async (event) => {
   const button = event.target.closest(".trip-action-btn");
 
   if (!button) return;
+
+  // Never let the Accept/Start/Complete click become the delayed sound trigger.
+  pendingDriverAlert = false;
+  clearDriverAlertTimers();
 
   const tripId = button.dataset.tripId;
   const action = button.dataset.action;
@@ -894,13 +947,27 @@ async function requestDriverCashout() {
 requestCashoutBtn?.addEventListener("click", requestDriverCashout);
 
 function enableDriverAlertSoundOnFirstInteraction() {
-  const unlock = () => {
+  const unlockFromPointer = (event) => {
+    if (event.target?.closest?.(".trip-action-btn")) {
+      return;
+    }
+
     unlockDriverAlertSound();
+    document.removeEventListener("click", unlockFromPointer);
+    document.removeEventListener("touchstart", unlockFromPointer);
+    document.removeEventListener("keydown", unlockFromKeyboard);
   };
 
-  document.addEventListener("click", unlock, { once: true });
-  document.addEventListener("touchstart", unlock, { once: true, passive: true });
-  document.addEventListener("keydown", unlock, { once: true });
+  const unlockFromKeyboard = () => {
+    unlockDriverAlertSound();
+    document.removeEventListener("click", unlockFromPointer);
+    document.removeEventListener("touchstart", unlockFromPointer);
+    document.removeEventListener("keydown", unlockFromKeyboard);
+  };
+
+  document.addEventListener("click", unlockFromPointer);
+  document.addEventListener("touchstart", unlockFromPointer, { passive: true });
+  document.addEventListener("keydown", unlockFromKeyboard);
 }
 
 async function initDriverDashboard() {
