@@ -215,6 +215,10 @@ goOfflineBtn?.addEventListener("click", async () => {
     if (tripCard) {
       tripCard.innerHTML = `<p>No assigned trip at the moment.</p>`;
     }
+
+    hideNewTripVisualAlert();
+    lastSeenAssignedTripId = null;
+    pendingDriverAlert = false;
   } catch (err) {
     console.error(err);
     showMessage(err.message || "Failed to go offline", "error");
@@ -229,14 +233,15 @@ function hasValidCoords(lat, lng) {
 let lastSeenAssignedTripId = null;
 let driverAlertUnlocked = false;
 let driverAudioContext = null;
+let pendingDriverAlert = false;
 
-function unlockDriverAlertSound() {
+async function unlockDriverAlertSound() {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
 
     if (!AudioContext) {
       console.warn("Web Audio API not supported.");
-      return;
+      return false;
     }
 
     if (!driverAudioContext) {
@@ -244,24 +249,38 @@ function unlockDriverAlertSound() {
     }
 
     if (driverAudioContext.state === "suspended") {
-      driverAudioContext.resume();
+      await driverAudioContext.resume();
     }
 
-    driverAlertUnlocked = true;
+    driverAlertUnlocked = driverAudioContext.state === "running";
 
     const alertStatus = document.getElementById("tripAlertsStatus");
-    if (alertStatus) {
+    if (alertStatus && driverAlertUnlocked) {
       alertStatus.style.display = "block";
       alertStatus.textContent = "Trip alerts enabled. Keep this page open while online.";
     }
+
+    if (driverAlertUnlocked && pendingDriverAlert) {
+      pendingDriverAlert = false;
+      playDriverNewTripAlert();
+    }
+
+    return driverAlertUnlocked;
   } catch (err) {
     console.error("Could not unlock driver alert sound", err);
+    return false;
   }
 }
 
 function playDriverBeep() {
   try {
-    if (!driverAlertUnlocked || !driverAudioContext) return;
+    if (
+      !driverAlertUnlocked ||
+      !driverAudioContext ||
+      driverAudioContext.state !== "running"
+    ) {
+      return false;
+    }
 
     const oscillator = driverAudioContext.createOscillator();
     const gainNode = driverAudioContext.createGain();
@@ -270,21 +289,35 @@ function playDriverBeep() {
     oscillator.frequency.value = 880;
 
     gainNode.gain.setValueAtTime(0.001, driverAudioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.5, driverAudioContext.currentTime + 0.02);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, driverAudioContext.currentTime + 0.6);
+    gainNode.gain.exponentialRampToValueAtTime(
+      0.5,
+      driverAudioContext.currentTime + 0.02,
+    );
+    gainNode.gain.exponentialRampToValueAtTime(
+      0.001,
+      driverAudioContext.currentTime + 0.6,
+    );
 
     oscillator.connect(gainNode);
     gainNode.connect(driverAudioContext.destination);
 
     oscillator.start();
     oscillator.stop(driverAudioContext.currentTime + 0.65);
+
+    return true;
   } catch (err) {
     console.error("Could not play driver beep", err);
+    return false;
   }
 }
 
 function playDriverNewTripAlert() {
-  playDriverBeep();
+  const played = playDriverBeep();
+
+  if (!played) {
+    pendingDriverAlert = true;
+    return;
+  }
 
   setTimeout(playDriverBeep, 700);
   setTimeout(playDriverBeep, 1400);
@@ -314,6 +347,8 @@ function hideNewTripVisualAlert() {
     banner.style.display = "none";
     banner.textContent = "";
   }
+
+  pendingDriverAlert = false;
 }
 
 async function requestDriverNotificationPermission() {
@@ -377,6 +412,9 @@ async function loadDriverInbox() {
       tripCard.innerHTML = `
         <p>No assigned trip at the moment.</p>
       `;
+
+      hideNewTripVisualAlert();
+      lastSeenAssignedTripId = null;
       return;
     }
 
@@ -397,8 +435,10 @@ async function loadDriverInbox() {
 
     if (isNewAssignedTrip) {
       lastSeenAssignedTripId = trip.id;
-      playDriverNewTripAlert();
       showNewTripVisualAlert(trip);
+      playDriverNewTripAlert();
+    } else if (trip.status !== "REQUESTED" || !hasAssignedDriverForAlert) {
+      hideNewTripVisualAlert();
     }
 
     const pickupMapsUrl = googleMapsDirectionsUrl(
@@ -853,8 +893,19 @@ async function requestDriverCashout() {
 
 requestCashoutBtn?.addEventListener("click", requestDriverCashout);
 
+function enableDriverAlertSoundOnFirstInteraction() {
+  const unlock = () => {
+    unlockDriverAlertSound();
+  };
+
+  document.addEventListener("click", unlock, { once: true });
+  document.addEventListener("touchstart", unlock, { once: true, passive: true });
+  document.addEventListener("keydown", unlock, { once: true });
+}
+
 async function initDriverDashboard() {
   try {
+    enableDriverAlertSoundOnFirstInteraction();
     setDriverAvailabilityUi("OFFLINE");
 
     await loadDriverInbox();
