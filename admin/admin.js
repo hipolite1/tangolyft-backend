@@ -11,6 +11,8 @@ const ADMIN_USER_KEY = "tangolyft_admin_user";
 
 let allTrips = [];
 let tripsAutoRefreshTimer = null;
+let tripDetailAutoRefreshTimer = null;
+let tripDetailRefreshInProgress = false;
 let currentTripDetail = null;
 
 function $(id) {
@@ -97,6 +99,54 @@ function stopTripsAutoRefresh() {
     clearInterval(tripsAutoRefreshTimer);
     tripsAutoRefreshTimer = null;
   }
+}
+
+function stopTripDetailAutoRefresh() {
+  if (tripDetailAutoRefreshTimer) {
+    clearInterval(tripDetailAutoRefreshTimer);
+    tripDetailAutoRefreshTimer = null;
+  }
+}
+
+async function refreshTripDetailSilently() {
+  if (tripDetailRefreshInProgress) return;
+
+  const token = getAdminToken();
+  const tripId = currentTripDetail?.id || getQueryParam("tripId");
+
+  if (!token || !tripId) return;
+
+  tripDetailRefreshInProgress = true;
+
+  try {
+    const previousStatus = currentTripDetail?.status || "";
+    const trip = await fetchTripDetail(token, tripId);
+
+    renderTripDetail(trip);
+
+    if (trip?.status !== previousStatus) {
+      setStatus(
+        `Trip status updated: ${trip?.status || "Unknown"}.`,
+        "success",
+      );
+    }
+
+    if (["COMPLETED", "CANCELLED"].includes(trip?.status || "")) {
+      stopTripDetailAutoRefresh();
+    }
+  } catch (err) {
+    console.error("Failed to auto-refresh trip detail", err);
+  } finally {
+    tripDetailRefreshInProgress = false;
+  }
+}
+
+function startTripDetailAutoRefresh(intervalMs = 5000) {
+  stopTripDetailAutoRefresh();
+
+  tripDetailAutoRefreshTimer = setInterval(() => {
+    refreshTripDetailSilently();
+  }, intervalMs);
 }
 
 function saveAdminSession(token, user) {
@@ -1644,11 +1694,13 @@ function initTripDetailPage() {
   });
 
   logoutBtn?.addEventListener("click", () => {
+    stopTripDetailAutoRefresh();
     clearAdminSession();
     window.location.href = "./login.html";
   });
 
   backBtn?.addEventListener("click", () => {
+    stopTripDetailAutoRefresh();
     window.location.href = "./trips.html";
   });
 
@@ -1672,7 +1724,13 @@ function initTripDetailPage() {
     await handleCompleteTrip();
   });
 
-  loadTripDetailPage();
+  loadTripDetailPage().then(() => {
+    if (!["COMPLETED", "CANCELLED"].includes(currentTripDetail?.status || "")) {
+      startTripDetailAutoRefresh(5000);
+    }
+  });
+
+  window.addEventListener("beforeunload", stopTripDetailAutoRefresh);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
