@@ -7,6 +7,8 @@ const paymentModeSelect = document.getElementById("paymentMode");
 
 let pickupLocation = null;
 let dropoffLocation = null;
+let paymentVerificationTimer = null;
+let tripStatusRefreshTimer = null;
 
 function updatePickupLocationStatus(message, type = "") {
   const statusEl = document.getElementById("pickupLocationStatus");
@@ -562,52 +564,120 @@ async function startPaystackPayment(tripId) {
   }
 }
 
-async function verifyLastPaystackPayment() {
+async function verifyLastPaystackPayment({ refreshStatus = true, silent = false } = {}) {
   const token = getRiderToken();
   const reference = localStorage.getItem("lastPaystackReference");
 
   if (!token) {
-    showMessage("Rider login token is missing. Please login again before verifying payment.", "error");
-    return;
+    throw new Error("Rider login token is missing. Please login again before verifying payment.");
   }
 
   if (!reference) {
-    showMessage("No Paystack reference found to verify.", "error");
-    return;
+    return { paid: false, skipped: true };
   }
 
-  try {
-    showMessage("Verifying payment...", "success");
+  if (!silent) {
+    showMessage("Confirming payment automatically...", "success");
+  }
 
-    const res = await fetch(`${API_BASE}/payments/paystack/verify`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ reference }),
-    });
+  const res = await fetch(`${API_BASE}/payments/paystack/verify`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ reference }),
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    if (!res.ok || !data.ok) {
-      throw new Error(data.message || "Payment verification failed");
+  if (!res.ok || !data.ok) {
+    throw new Error(data.message || "Payment verification failed");
+  }
+
+  const paid =
+    data.status === "PAID" ||
+    data.payment?.status === "PAID" ||
+    data.trip?.payment?.status === "PAID";
+
+  if (data.trip?.id) {
+    localStorage.setItem("lastRiderTripId", data.trip.id);
+  } else if (data.payment?.tripId) {
+    localStorage.setItem("lastRiderTripId", data.payment.tripId);
+  } else if (data.tripId) {
+    localStorage.setItem("lastRiderTripId", data.tripId);
+  }
+
+  if (paid) {
+    localStorage.removeItem("lastPaystackReference");
+    showMessage("Payment confirmed successfully.", "success");
+  } else if (!silent) {
+    showMessage(
+      "Payment is still being confirmed. This page will keep checking automatically.",
+      "success",
+    );
+  }
+
+  if (refreshStatus) {
+    const phoneInput = document.getElementById("statusPhone");
+    if (phoneInput?.value) {
+      await loadTripStatus(phoneInput.value.trim(), { silent: true });
+    }
+  }
+
+  return { paid, data };
+}
+
+function stopAutomaticPaymentVerification() {
+  if (paymentVerificationTimer) {
+    clearTimeout(paymentVerificationTimer);
+    paymentVerificationTimer = null;
+  }
+}
+
+async function startAutomaticPaymentVerification() {
+  stopAutomaticPaymentVerification();
+
+  let attempts = 0;
+  const maxAttempts = 12;
+
+  const check = async () => {
+    const reference = localStorage.getItem("lastPaystackReference");
+
+    if (!reference) {
+      stopAutomaticPaymentVerification();
+      return;
     }
 
-    showMessage(data.message || "Payment verified successfully.", "success");
+    attempts += 1;
 
-if (data.status === "PAID" || data.payment?.status === "PAID") {
-  localStorage.removeItem("lastPaystackReference");
-}
+    try {
+      const result = await verifyLastPaystackPayment({
+        refreshStatus: true,
+        silent: attempts > 1,
+      });
 
-const phoneInput = document.getElementById("statusPhone");
-if (phoneInput?.value) {
-  await loadTripStatus(phoneInput.value.trim());
-}
-  } catch (err) {
-    console.error(err);
-    showMessage(err.message || "Failed to verify payment.", "error");
-  }
+      if (result.paid) {
+        stopAutomaticPaymentVerification();
+        return;
+      }
+    } catch (err) {
+      console.error("Automatic payment verification failed", err);
+    }
+
+    if (attempts >= maxAttempts) {
+      stopAutomaticPaymentVerification();
+      showMessage(
+        "Payment confirmation is taking longer than expected. Use Check Trip Status; the app will verify again automatically when this page opens.",
+        "error",
+      );
+      return;
+    }
+
+    paymentVerificationTimer = setTimeout(check, 5000);
+  };
+
+  await check();
 }
 
 function renderTripStatus(trip) {
@@ -629,10 +699,9 @@ function renderTripStatus(trip) {
   const showPayNow =
     trip.paymentMode === "PREPAID" && trip.payment?.status !== "PAID";
 
-  const showVerifyButton =
-    trip.paymentMode === "PREPAID" &&
-    trip.payment?.status !== "PAID" &&
-    localStorage.getItem("lastPaystackReference");
+  const paymentReferencePending = Boolean(
+    localStorage.getItem("lastPaystackReference"),
+  );
 
   tripStatusCard.innerHTML = `
     <div class="trip-box">
@@ -668,8 +737,8 @@ function renderTripStatus(trip) {
       }
 
       ${
-        showVerifyButton
-          ? `<button class="btn-primary" id="verifyPaymentBtn" style="margin-top:12px;">Verify Completed Payment</button>`
+        paymentReferencePending && trip.payment?.status !== "PAID"
+          ? `<p class="small-note success" style="margin-top:12px;">Payment confirmation is being checked automatically. No extra button is required.</p>`
           : ""
       }
 
@@ -696,64 +765,124 @@ function renderTripStatus(trip) {
     payNowBtn.disabled = false;
   });
 
-  const verifyPaymentBtn = document.getElementById("verifyPaymentBtn");
-  verifyPaymentBtn?.addEventListener("click", async () => {
-    verifyPaymentBtn.disabled = true;
-    await verifyLastPaystackPayment();
-    verifyPaymentBtn.disabled = false;
-  });
 }
 
-async function loadTripStatus(phone) {
+function getTripPriority(trip) {
+  const activePriority = {
+    STARTED: 4,
+    ACCEPTED: 3,
+    REQUESTED: 2,
+    COMPLETED: 1,
+    CANCELLED: 0,
+  };
+
+  const statusScore = activePriority[trip?.status] ?? 0;
+  const requestedAt = new Date(
+    trip?.requestedAt || trip?.createdAt || 0,
+  ).getTime();
+
+  return {
+    statusScore,
+    requestedAt: Number.isFinite(requestedAt) ? requestedAt : 0,
+  };
+}
+
+function chooseBestRiderTrip(trips) {
+  return (
+    trips
+      .filter(Boolean)
+      .sort((a, b) => {
+        const aScore = getTripPriority(a);
+        const bScore = getTripPriority(b);
+
+        if (aScore.statusScore !== bScore.statusScore) {
+          return bScore.statusScore - aScore.statusScore;
+        }
+
+        return bScore.requestedAt - aScore.requestedAt;
+      })[0] || null
+  );
+}
+
+async function loadTripStatus(phone, { silent = false } = {}) {
   if (!tripStatusCard) return;
 
   const lastTripId = localStorage.getItem("lastRiderTripId");
 
   try {
     if (checkStatusBtn) checkStatusBtn.disabled = true;
-    showMessage("Checking trip status...", "success");
-
-    let data = null;
-
-    if (lastTripId) {
-      const exactRes = await fetch(`${API_BASE}/trips/status-by-id/${lastTripId}`);
-      const exactData = await exactRes.json();
-
-      if (exactRes.ok && exactData.ok && exactData.trip) {
-        data = exactData;
-      }
+    if (!silent) {
+      showMessage("Checking trip status...", "success");
     }
 
-    if (!data) {
-      if (!phone) {
-        showMessage("Phone number is required.", "error");
-        return;
-      }
+    const candidates = [];
 
-      const res = await fetch(
+    if (phone) {
+      const phoneRes = await fetch(
         `${API_BASE}/trips/status/${encodeURIComponent(phone)}`,
       );
+      const phoneData = await phoneRes.json();
 
-      data = await res.json();
-
-      if (!res.ok || !data.ok) {
-        throw new Error(data.message || "Failed to check status");
+      if (phoneRes.ok && phoneData.ok && phoneData.trip) {
+        candidates.push(phoneData.trip);
+      } else if (!phoneRes.ok) {
+        throw new Error(phoneData.message || "Failed to check status");
       }
     }
 
-    if (!data.trip) {
+    if (lastTripId) {
+      try {
+        const exactRes = await fetch(
+          `${API_BASE}/trips/status-by-id/${encodeURIComponent(lastTripId)}`,
+        );
+        const exactData = await exactRes.json();
+
+        if (exactRes.ok && exactData.ok && exactData.trip) {
+          candidates.push(exactData.trip);
+        }
+      } catch (exactErr) {
+        console.warn("Saved trip could not be loaded.", exactErr);
+      }
+    }
+
+    const trip = chooseBestRiderTrip(candidates);
+
+    if (!trip) {
       tripStatusCard.innerHTML = `<p>No trip found.</p>`;
-      showMessage("", "success");
+      if (!silent) showMessage("", "success");
       return;
     }
 
-    renderTripStatus(data.trip);
-    showMessage("Trip status updated.", "success");
+    localStorage.setItem("lastRiderTripId", trip.id);
+    renderTripStatus(trip);
+
+    if (!silent) {
+      showMessage("Trip status updated.", "success");
+    }
   } catch (err) {
     console.error(err);
     showMessage(err.message || "Failed to check trip status.", "error");
   } finally {
     if (checkStatusBtn) checkStatusBtn.disabled = false;
+  }
+}
+
+function startTripStatusAutoRefresh(phone) {
+  if (tripStatusRefreshTimer) {
+    clearInterval(tripStatusRefreshTimer);
+  }
+
+  if (!phone) return;
+
+  tripStatusRefreshTimer = setInterval(() => {
+    loadTripStatus(phone, { silent: true });
+  }, 10000);
+}
+
+function stopTripStatusAutoRefresh() {
+  if (tripStatusRefreshTimer) {
+    clearInterval(tripStatusRefreshTimer);
+    tripStatusRefreshTimer = null;
   }
 }
 
@@ -793,27 +922,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (!isStatusPage) return;
 
-  if (lastReference && lastTripId) {
-    showMessage("Checking payment confirmation...", "success");
-
-    try {
-      await verifyLastPaystackPayment();
-
-      if (savedPhone) {
-        await loadTripStatus(savedPhone);
-      }
-    } catch (err) {
-      console.error(err);
-      showMessage(
-        "Payment confirmation is still pending. Please click Check Status or try Pay Now / Retry Payment again.",
-        "error",
-      );
-    }
-
-    return;
-  }
-
   if (savedPhone) {
     await loadTripStatus(savedPhone);
+    startTripStatusAutoRefresh(savedPhone);
   }
+
+  if (lastReference && lastTripId) {
+    showMessage("Confirming payment automatically...", "success");
+    await startAutomaticPaymentVerification();
+  }
+
+  window.addEventListener("beforeunload", () => {
+    stopAutomaticPaymentVerification();
+    stopTripStatusAutoRefresh();
+  });
 });
