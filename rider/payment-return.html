@@ -3,87 +3,35 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>Payment Received - TangoLyft</title>
-
+  <title>Return to TangoLyft</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      font-family: Arial, sans-serif;
-      background: #f4f7fb;
-      color: #111827;
-    }
-
-    .card {
-      width: 100%;
-      max-width: 520px;
-      padding: 32px 24px;
-      border-radius: 20px;
-      background: #ffffff;
-      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.09);
-      text-align: center;
-    }
-
-    .checkmark {
-      width: 76px;
-      height: 76px;
-      margin: 0 auto 22px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      background: #e7f6ec;
-      color: #16803d;
-      font-size: 42px;
-      font-weight: 900;
-    }
-
-    h1 {
-      margin: 0 0 14px;
-      font-size: 30px;
-    }
-
-    p {
-      margin: 10px 0;
-      color: #4b5563;
-      font-size: 17px;
-      line-height: 1.55;
-    }
-
-    .important {
-      margin-top: 22px;
-      padding: 16px;
-      border-radius: 12px;
-      background: #eef4ff;
-      color: #1e3a8a;
-      font-weight: 700;
-    }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; font-family:Arial,sans-serif; background:#f4f7fb; color:#111827; }
+    .card { width:100%; max-width:520px; padding:32px 24px; border-radius:20px; background:#fff; box-shadow:0 12px 35px rgba(0,0,0,.09); text-align:center; }
+    .checkmark { width:76px; height:76px; margin:0 auto 22px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:#e7f6ec; color:#16803d; font-size:42px; font-weight:900; }
+    h1 { margin:0 0 14px; font-size:30px; }
+    p { margin:10px 0; color:#4b5563; font-size:17px; line-height:1.55; }
+    .btn { display:block; width:100%; margin-top:22px; padding:16px; border:0; border-radius:14px; background:#111827; color:#fff; font-size:17px; font-weight:800; text-decoration:none; }
+    .note { margin-top:16px; font-size:14px; color:#6b7280; }
   </style>
 </head>
-
 <body>
   <main class="card">
     <div class="checkmark">✓</div>
-
     <h1>Payment Submitted</h1>
-
-    <p>
-      Your payment information has been returned to TangoLyft.
-    </p>
-
-    <p class="important">
-      Close this page and return to the TangoLyft Rider App.
-      The app will confirm your payment and display your current trip.
-    </p>
+    <p>Return to the TangoLyft Rider App to confirm your payment and view your current trip.</p>
+    <a id="returnBtn" class="btn" href="tangolyftriderapp://payment-return">Return to TangoLyft App</a>
+    <p class="note">The app should open automatically. If it does not, tap the button above.</p>
   </main>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const reference = params.get('reference') || params.get('trxref') || '';
+    const deepLink = reference
+      ? `tangolyftriderapp://payment-return?reference=${encodeURIComponent(reference)}`
+      : 'tangolyftriderapp://payment-return';
+    document.getElementById('returnBtn').href = deepLink;
+    setTimeout(() => { window.location.href = deepLink; }, 500);
+  </script>
 </body>
 </html>
+
