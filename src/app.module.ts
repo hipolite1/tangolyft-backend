@@ -19,7 +19,9 @@ import { PaymentsModule } from "./payments/payments.module";
 import { WebhooksModule } from "./webhooks/webhooks.module";
 import { MapsModule } from "./maps/maps.module";
 
+
 import { ThrottlerProxyGuard } from "./auth/throttler-proxy.guard";
+import { RiderModule } from "./rider/rider.module";
 
 @Module({
   imports: [
@@ -51,6 +53,7 @@ import { ThrottlerProxyGuard } from "./auth/throttler-proxy.guard";
     VersionModule,
     PrismaModule,
     AuthModule,
+    RiderModule,
     DriverModule,
     AdminModule,
     TripsModule,
