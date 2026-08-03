@@ -239,17 +239,17 @@ export class AuthService {
       }
     }
 
-    const user = await this.prisma.user.findUnique({
+     const user = await this.prisma.user.upsert({
       where: {
         phone,
       },
+      update: {},
+      create: {
+        phone,
+        role: "RIDER",
+        status: "ACTIVE",
+      },
     });
-
-    if (!user) {
-      throw new UnauthorizedException(
-        "User not found for this phone number.",
-      );
-    }
 
     const token = this.issueJwt(user.id, user.role);
 
