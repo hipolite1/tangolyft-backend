@@ -90,7 +90,7 @@ export class AppController {
     </div>
 
     <div class="note">
-      TangoMove pilot app portal
+    TangoMove app portal
     </div>
   </main>
 </body>
