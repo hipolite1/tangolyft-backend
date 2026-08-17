@@ -20,15 +20,15 @@
     <div class="checkmark">✓</div>
     <h1>Payment Submitted</h1>
     <p>Return to the TangoMove Rider App to confirm your payment and view your current trip.</p>
-    <a id="returnBtn" class="btn" href="tangolyftriderapp://payment-return">Return to TangoMove App</a>
+    <a id="returnBtn" class="btn" href="tangomoveriderapp://payment-return">Return to TangoMove App</a>
     <p class="note">The app should open automatically. If it does not, tap the button above.</p>
   </main>
   <script>
     const params = new URLSearchParams(window.location.search);
     const reference = params.get('reference') || params.get('trxref') || '';
     const deepLink = reference
-      ? `tangolyftriderapp://payment-return?reference=${encodeURIComponent(reference)}`
-      : 'tangolyftriderapp://payment-return';
+      ? `tangomoveriderapp://payment-return?reference=${encodeURIComponent(reference)}`
+      : 'tangomoveriderapp://payment-return';
     document.getElementById('returnBtn').href = deepLink;
     setTimeout(() => { window.location.href = deepLink; }, 500);
   </script>
