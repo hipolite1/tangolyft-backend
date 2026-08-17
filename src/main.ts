@@ -19,10 +19,15 @@ async function bootstrap() {
     "http://localhost:5502",
     "http://127.0.0.1:5503",
     "http://localhost:5503",
+    "https://app.tangomove.com",
+    "https://tangomove.com",
+    "https://www.tangomove.com",
+
     "https://app.tangolyft.com",
     "https://tangolyft.com",
     "https://www.tangolyft.com",
   ]);
+
 
   app.use((req: any, res: any, next: any) => {
     const origin = req.headers.origin as string | undefined;

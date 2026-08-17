@@ -11,7 +11,7 @@ export class AppController {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TangoLyft App</title>
+  <title>TangoMove App</title>
   <style>
     body {
       margin: 0;
@@ -80,7 +80,7 @@ export class AppController {
 </head>
 <body>
   <main class="card">
-    <h1>TangoLyft</h1>
+    <h1>TangoMove</h1>
     <p>Choose your portal to continue.</p>
 
     <div class="buttons">
@@ -90,7 +90,7 @@ export class AppController {
     </div>
 
     <div class="note">
-      TangoLyft pilot app portal
+      TangoMove pilot app portal
     </div>
   </main>
 </body>

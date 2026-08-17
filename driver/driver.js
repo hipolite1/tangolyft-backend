@@ -382,7 +382,7 @@ function showNewTripVisualAlert(trip) {
   showMessage(messageText, "success");
 
   if ("Notification" in window && Notification.permission === "granted") {
-    new Notification("New TangoLyft Trip Assigned", {
+    new Notification("New TangoMove Trip Assigned", {
       body: messageText,
     });
   }
