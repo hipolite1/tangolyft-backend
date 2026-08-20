@@ -249,6 +249,10 @@ export class AuthService {
       },
     });
 
+    if (user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('Account is suspended.');
+    }
+
     const token = this.issueJwt(user.id, user.role);
 
     return {
