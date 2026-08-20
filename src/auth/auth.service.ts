@@ -3,44 +3,47 @@ import {
   InternalServerErrorException,
   ServiceUnavailableException,
   UnauthorizedException,
-} from "@nestjs/common";
-import { signJwt, DEFAULT_EXPIRES_IN } from "./jwt";
-import { PrismaService } from "../prisma/prisma.service";
-import * as bcrypt from "bcrypt";
-import twilio from "twilio";
-import { normalizePhone } from "../common/phone";
+} from '@nestjs/common';
+import { signJwt, DEFAULT_EXPIRES_IN } from './jwt';
+import { PrismaService } from '../prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
+import twilio from 'twilio';
+import { normalizePhone } from '../common/phone';
 
 @Injectable()
 export class AuthService {
   constructor(private readonly prisma: PrismaService) {}
 
   private otpExpiresMinutes(): number {
-    const raw = process.env.OTP_EXPIRES_MIN ?? "5";
+    const raw = process.env.OTP_EXPIRES_MIN ?? '5';
     const n = Number(raw);
     return Number.isFinite(n) && n > 0 ? n : 5;
   }
 
   private otpDevMode(): boolean {
-    return (process.env.OTP_DEV_MODE ?? "false").toLowerCase() === "true";
+    return (process.env.OTP_DEV_MODE ?? 'false').toLowerCase() === 'true';
   }
 
-  private issueJwt(userId: string, role: "RIDER" | "DRIVER" | "ADMIN") {
+  private issueJwt(
+    userId: string,
+    role: 'RIDER' | 'DRIVER' | 'CUSTOMER_SUPPORT' | 'OPERATIONS' | 'ADMIN',
+  ) {
     return signJwt({ sub: userId, role }, DEFAULT_EXPIRES_IN);
   }
 
   private toE164(rawPhone: string): string {
     const normalized = normalizePhone(rawPhone);
-    return normalized.startsWith("+") ? normalized : `+${normalized}`;
+    return normalized.startsWith('+') ? normalized : `+${normalized}`;
   }
 
   private getTwilioVerifyConfig() {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID || "";
-    const authToken = process.env.TWILIO_AUTH_TOKEN || "";
-    const verifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID || "";
+    const accountSid = process.env.TWILIO_ACCOUNT_SID || '';
+    const authToken = process.env.TWILIO_AUTH_TOKEN || '';
+    const verifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID || '';
 
     if (!accountSid || !authToken || !verifyServiceSid) {
       throw new InternalServerErrorException(
-        "Twilio Verify is not fully configured.",
+        'Twilio Verify is not fully configured.',
       );
     }
 
@@ -57,11 +60,9 @@ export class AuthService {
    * OTP_DEV_MODE=true. Production should keep OTP_DEV_MODE=false.
    */
   private async requestLocalDevOtp(phone: string) {
-    const otp = "123456";
+    const otp = '123456';
     const otpHash = await bcrypt.hash(otp, 10);
-    const expiresAt = new Date(
-      Date.now() + this.otpExpiresMinutes() * 60_000,
-    );
+    const expiresAt = new Date(Date.now() + this.otpExpiresMinutes() * 60_000);
 
     await this.prisma.otpSession.updateMany({
       where: {
@@ -81,13 +82,12 @@ export class AuthService {
       },
     });
 
-    const debugOtp =
-      (process.env.DEBUG_OTP || "").toLowerCase() === "true";
+    const debugOtp = (process.env.DEBUG_OTP || '').toLowerCase() === 'true';
 
     return {
       ok: true,
       phone,
-      channel: "development",
+      channel: 'development',
       expiresInMinutes: this.otpExpiresMinutes(),
       ...(debugOtp ? { otp } : {}),
     };
@@ -108,10 +108,10 @@ export class AuthService {
         .services(verifyServiceSid)
         .verifications.create({
           to: destination,
-          channel: "sms",
+          channel: 'sms',
         });
 
-      console.log("TWILIO_VERIFY_REQUEST", {
+      console.log('TWILIO_VERIFY_REQUEST', {
         phone,
         status: verification.status,
       });
@@ -119,12 +119,12 @@ export class AuthService {
       return {
         ok: true,
         phone,
-        channel: "sms",
+        channel: 'sms',
         status: verification.status,
         expiresInMinutes: 10,
       };
     } catch (error: any) {
-      console.error("TWILIO_VERIFY_SEND_ERROR", {
+      console.error('TWILIO_VERIFY_SEND_ERROR', {
         phone,
         code: error?.code,
         status: error?.status,
@@ -132,7 +132,7 @@ export class AuthService {
       });
 
       throw new ServiceUnavailableException(
-        error?.message || "Could not send OTP by SMS.",
+        error?.message || 'Could not send OTP by SMS.',
       );
     }
   }
@@ -149,20 +149,18 @@ export class AuthService {
         },
       },
       orderBy: {
-        createdAt: "desc",
+        createdAt: 'desc',
       },
     });
 
     if (!session) {
       throw new UnauthorizedException(
-        "No active OTP session found. Request a new code.",
+        'No active OTP session found. Request a new code.',
       );
     }
 
     if (session.attempts >= 3) {
-      throw new UnauthorizedException(
-        "Too many attempts. Request a new code.",
-      );
+      throw new UnauthorizedException('Too many attempts. Request a new code.');
     }
 
     const valid = await bcrypt.compare(otp, session.otpHash);
@@ -179,7 +177,7 @@ export class AuthService {
     });
 
     if (!valid) {
-      throw new UnauthorizedException("Invalid OTP.");
+      throw new UnauthorizedException('Invalid OTP.');
     }
 
     await this.prisma.otpSession.update({
@@ -209,24 +207,24 @@ export class AuthService {
             code: otp.trim(),
           });
 
-        console.log("TWILIO_VERIFY_CHECK", {
+        console.log('TWILIO_VERIFY_CHECK', {
           phone,
           status: verificationCheck.status,
           valid: verificationCheck.valid,
         });
 
         if (
-          verificationCheck.status !== "approved" ||
+          verificationCheck.status !== 'approved' ||
           !verificationCheck.valid
         ) {
-          throw new UnauthorizedException("Invalid or expired OTP.");
+          throw new UnauthorizedException('Invalid or expired OTP.');
         }
       } catch (error: any) {
         if (error instanceof UnauthorizedException) {
           throw error;
         }
 
-        console.error("TWILIO_VERIFY_CHECK_ERROR", {
+        console.error('TWILIO_VERIFY_CHECK_ERROR', {
           phone,
           code: error?.code,
           status: error?.status,
@@ -234,20 +232,20 @@ export class AuthService {
         });
 
         throw new UnauthorizedException(
-          "Invalid, expired, or unavailable OTP.",
+          'Invalid, expired, or unavailable OTP.',
         );
       }
     }
 
-     const user = await this.prisma.user.upsert({
+    const user = await this.prisma.user.upsert({
       where: {
         phone,
       },
       update: {},
       create: {
         phone,
-        role: "RIDER",
-        status: "ACTIVE",
+        role: 'RIDER',
+        status: 'ACTIVE',
       },
     });
 

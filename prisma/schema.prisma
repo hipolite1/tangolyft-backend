@@ -127,7 +127,7 @@ model Trip {
   riderId  String
   driverId String?
 
-  status       TripStatus  @default(REQUESTED)
+  status       TripStatus   @default(REQUESTED)
   cancelledBy  CancelledBy?
   cancelReason String?
 
@@ -317,6 +317,8 @@ enum PaymentMode {
 enum Role {
   RIDER
   DRIVER
+  CUSTOMER_SUPPORT
+  OPERATIONS
   ADMIN
 }
 
