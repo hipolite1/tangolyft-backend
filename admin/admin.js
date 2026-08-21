@@ -157,7 +157,54 @@ function saveAdminSession(token, user) {
 function getAdminToken() {
   return localStorage.getItem(ADMIN_TOKEN_KEY) || '';
 }
+function getAdminUser() {
+  try {
+    return JSON.parse(localStorage.getItem(ADMIN_USER_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
 
+function applyOfficeRoleVisibility() {
+  const user = getAdminUser();
+  const role = user?.role || '';
+
+  const isAdmin = role === 'ADMIN';
+  const isOperations = role === 'OPERATIONS';
+  const isCustomerSupport = role === 'CUSTOMER_SUPPORT';
+
+  document.querySelectorAll('a[href="./staff.html"]').forEach((el) => {
+    el.style.display = isAdmin ? '' : 'none';
+  });
+
+  document.querySelectorAll('a[href="./payouts.html"]').forEach((el) => {
+    el.style.display = isAdmin || isOperations ? '' : 'none';
+  });
+
+  document
+    .querySelectorAll('.approve-btn, .reject-btn, .suspend-btn, .unsuspend-btn')
+    .forEach((el) => {
+      el.style.display = isAdmin || isOperations ? '' : 'none';
+    });
+
+  document
+    .querySelectorAll(
+      '.cancel-btn, .waive-btn, .use-nearby-driver-btn, #assignDriverBtn, #startTripBtn, #completeTripBtn, #waiveTripBtn, #cancelTripBtn',
+    )
+    .forEach((el) => {
+      el.style.display = isAdmin || isOperations ? '' : 'none';
+    });
+
+  document.querySelectorAll('.mark-paid-btn').forEach((el) => {
+    el.style.display = isAdmin ? '' : 'none';
+  });
+
+  if (isCustomerSupport) {
+    document.querySelectorAll('a[href="./operations.html"]').forEach((el) => {
+      el.style.display = 'none';
+    });
+  }
+}
 function clearAdminSession() {
   localStorage.removeItem(ADMIN_TOKEN_KEY);
   localStorage.removeItem(ADMIN_USER_KEY);
@@ -1448,14 +1495,21 @@ function initLoginPage() {
 
       const data = await verifyOtp(phone, otp);
 
-      if (!data.user || data.user.role !== 'ADMIN') {
-        throw new Error('This account is not an ADMIN account.');
+      const allowedOfficeRoles = ['ADMIN', 'OPERATIONS', 'CUSTOMER_SUPPORT'];
+
+      if (!data.user || !allowedOfficeRoles.includes(data.user.role)) {
+        throw new Error('This account does not have office access.');
       }
 
       saveAdminSession(data.token, data.user);
       setStatus('Login successful. Redirecting...', 'success');
 
       setTimeout(() => {
+        if (data.user.role === 'CUSTOMER_SUPPORT') {
+          window.location.href = './trips.html';
+          return;
+        }
+
         window.location.href = './pending-drivers.html';
       }, 500);
     } catch (err) {
@@ -1975,6 +2029,11 @@ function initTripDetailPage() {
 
 document.addEventListener('DOMContentLoaded', () => {
   const page = document.body.dataset.page;
+
+  if (page !== 'login') {
+    requireAdminToken();
+    applyOfficeRoleVisibility();
+  }
 
   if (page === 'login') {
     initLoginPage();
