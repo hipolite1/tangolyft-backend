@@ -23,6 +23,13 @@ export class AdminController {
     return this.adminService.createStaff(body);
   }
 
+  // ADMIN ONLY: View Customer Support and Operations staff accounts
+  @RequireRole('ADMIN')
+  @Get('staff')
+  async listStaff() {
+    return this.adminService.listStaff();
+  }
+
   // ADMIN ONLY: Suspend a staff account
   @RequireRole('ADMIN')
   @Post('staff/:userId/suspend')

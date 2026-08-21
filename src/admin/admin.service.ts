@@ -68,6 +68,34 @@ export class AdminService {
       },
     };
   }
+  async listStaff() {
+    const staff = await this.prisma.user.findMany({
+      where: {
+        role: {
+          in: ['CUSTOMER_SUPPORT', 'OPERATIONS'],
+        },
+      },
+      select: {
+        id: true,
+        fullName: true,
+        phone: true,
+        email: true,
+        role: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return {
+      ok: true,
+      staff,
+    };
+  }
+
   async suspendStaff(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TangoMove Admin - Staff</title>
+    <link rel="stylesheet" href="./admin.css" />
+  </head>
+
+  <body data-page="staff">
+    <div class="layout">
+      <aside class="sidebar">
+        <h2>TangoMove Admin</h2>
+
+        <nav>
+          <a class="nav-link" href="./pending-drivers.html">Pending Drivers</a>
+          <a class="nav-link" href="./approved-drivers.html"
+            >Approved Drivers</a
+          >
+          <a class="nav-link" href="./trips.html">Trips</a>
+          <a class="nav-link" href="./operations.html">Operations</a>
+          <a class="nav-link" href="./payouts.html">Payouts</a>
+          <a class="nav-link active" href="./staff.html">Staff</a>
+        </nav>
+
+        <button id="logoutBtn" class="btn danger full">Logout</button>
+      </aside>
+
+      <main class="content">
+        <div class="topbar">
+          <div>
+            <h1>Staff Management</h1>
+            <p class="muted">
+              Create and manage Customer Support and Operations staff accounts.
+            </p>
+          </div>
+
+          <button id="refreshBtn" class="btn primary">Refresh</button>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <div class="card">
+          <h2>Create Staff Account</h2>
+
+          <form id="staffForm">
+            <div class="form-grid">
+              <div>
+                <label for="staffFullName">Full Name</label>
+                <input
+                  id="staffFullName"
+                  type="text"
+                  placeholder="Employee full name"
+                  required
+                />
+              </div>
+
+              <div>
+                <label for="staffPhone">Phone Number</label>
+                <input
+                  id="staffPhone"
+                  type="tel"
+                  placeholder="234..."
+                  required
+                />
+              </div>
+
+              <div>
+                <label for="staffEmail">Email</label>
+                <input
+                  id="staffEmail"
+                  type="email"
+                  placeholder="employee@example.com"
+                />
+              </div>
+
+              <div>
+                <label for="staffRole">Role</label>
+                <select id="staffRole" required>
+                  <option value="">Select role</option>
+                  <option value="CUSTOMER_SUPPORT">Customer Support</option>
+                  <option value="OPERATIONS">Operations</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="margin-top: 16px">
+              <button id="createStaffBtn" type="submit" class="btn primary">
+                Create Staff Account
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card" style="margin-top: 24px">
+          <div class="topbar">
+            <div>
+              <h2>Existing Staff</h2>
+              <p class="muted">
+                View account role and status. Suspend or reactivate staff when
+                needed.
+              </p>
+            </div>
+          </div>
+
+          <div id="emptyState" class="empty-state" style="display: none">
+            No staff accounts found.
+          </div>
+
+          <div class="table-wrap">
+            <table id="staffTable">
+              <thead>
+                <tr>
+                  <th>Full Name</th>
+                  <th>Phone</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+
+              <tbody id="staffTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="./admin.js"></script>
+  </body>
+</html>

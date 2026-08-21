@@ -1,127 +1,216 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TangoMove Admin - Operations</title>
-  <link rel="stylesheet" href="./admin.css" />
-</head>
-<body data-page="operations">
-  <div class="admin-layout">
-    <aside class="sidebar">
-      <div class="brand">TangoMove Admin</div>
-      <nav class="nav">
-        <a href="./pending-drivers.html">Pending Drivers</a>
-        <a href="./approved-drivers.html">Approved Drivers</a>
-        <a href="./trips.html">Trips</a>
-        <a href="./payouts.html">Payouts</a>
-        <a href="./operations.html" class="active">Operations</a>
-      </nav>
-    </aside>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TangoMove Admin - Operations</title>
+    <link rel="stylesheet" href="./admin.css" />
+  </head>
+  <body data-page="operations">
+    <div class="admin-layout">
+      <aside class="sidebar">
+        <div class="brand">TangoMove Admin</div>
+        <nav class="nav">
+          <a href="./pending-drivers.html">Pending Drivers</a>
+          <a href="./approved-drivers.html">Approved Drivers</a>
+          <a href="./trips.html">Trips</a>
+          <a href="./payouts.html">Payouts</a>
+          <a class="nav-link" href="./staff.html">Staff</a>
+          <a href="./operations.html" class="active">Operations</a>
+        </nav>
+      </aside>
 
-    <main class="content">
-      <div class="page-header">
-        <h1>Operations</h1>
-        <div class="row gap">
-          <button id="logoutBtn" class="btn danger">Logout</button>
+      <main class="content">
+        <div class="page-header">
+          <h1>Operations</h1>
+          <div class="row gap">
+            <button id="logoutBtn" class="btn danger">Logout</button>
+          </div>
         </div>
-      </div>
 
-      <div id="status" class="status info"></div>
+        <div id="status" class="status info"></div>
 
-      <div class="card">
-        <h2>Before Launch Checklist</h2>
-        <ul class="ops-list">
-          <li>Confirm DEBUG_OTP is set to false in Render.</li>
-          <li>Confirm app.tangomove.com loads Rider, Driver, and Admin pages.</li>
-          <li>Confirm Paystack callback returns riders to app.tangomove.com/rider/status.html.</li>
-          <li>Confirm Paystack webhook is active and payments show PAID / CONFIRMED.</li>
-          <li>Complete one rider payment, admin assignment, driver completion, and wallet credit test.</li>
-          <li>Complete one driver payout request and admin mark-paid test.</li>
-          <li>Confirm support contact and operations operator are ready before real rider use.</li>
-        </ul>
-      </div>
+        <div class="card">
+          <h2>Before Launch Checklist</h2>
+          <ul class="ops-list">
+            <li>Confirm DEBUG_OTP is set to false in Render.</li>
+            <li>
+              Confirm app.tangomove.com loads Rider, Driver, and Admin pages.
+            </li>
+            <li>
+              Confirm Paystack callback returns riders to
+              app.tangomove.com/rider/status.html.
+            </li>
+            <li>
+              Confirm Paystack webhook is active and payments show PAID /
+              CONFIRMED.
+            </li>
+            <li>
+              Complete one rider payment, admin assignment, driver completion,
+              and wallet credit test.
+            </li>
+            <li>
+              Complete one driver payout request and admin mark-paid test.
+            </li>
+            <li>
+              Confirm support contact and operations operator are ready before
+              real rider use.
+            </li>
+          </ul>
+        </div>
 
-      <div class="card">
-        <h2>Daily Admin Checklist</h2>
-        <ul class="ops-list">
-          <li>Check new paid and confirmed trips.</li>
-          <li>Assign available drivers or couriers to waiting trips.</li>
-          <li>Monitor active trips until completion.</li>
-          <li>Confirm completed trips credit the driver wallet.</li>
-          <li>Review pending payout requests.</li>
-          <li>Mark payout as paid only after money has been sent to the driver.</li>
-        </ul>
-      </div>
+        <div class="card">
+          <h2>Daily Admin Checklist</h2>
+          <ul class="ops-list">
+            <li>Check new paid and confirmed trips.</li>
+            <li>Assign available drivers or couriers to waiting trips.</li>
+            <li>Monitor active trips until completion.</li>
+            <li>Confirm completed trips credit the driver wallet.</li>
+            <li>Review pending payout requests.</li>
+            <li>
+              Mark payout as paid only after money has been sent to the driver.
+            </li>
+          </ul>
+        </div>
 
-      <div class="card">
-        <h2>Driver Onboarding Rules</h2>
-        <ul class="ops-list">
-          <li>Confirm the driver or courier name and phone number before approval.</li>
-          <li>Confirm driver type: car driver or bike courier.</li>
-          <li>Confirm vehicle or bike availability before assigning real trips.</li>
-          <li>Confirm the driver's Abuja service area and availability window.</li>
-          <li>Approve only drivers and couriers who are ready for launch testing.</li>
-          <li>Tell approved drivers to sign in with their phone number and secure login code.</li>
-          <li>Run one test assignment with each new driver before sending real rider trips.</li>
-        </ul>
-      </div>
+        <div class="card">
+          <h2>Driver Onboarding Rules</h2>
+          <ul class="ops-list">
+            <li>
+              Confirm the driver or courier name and phone number before
+              approval.
+            </li>
+            <li>Confirm driver type: car driver or bike courier.</li>
+            <li>
+              Confirm vehicle or bike availability before assigning real trips.
+            </li>
+            <li>
+              Confirm the driver's Abuja service area and availability window.
+            </li>
+            <li>
+              Approve only drivers and couriers who are ready for launch
+              testing.
+            </li>
+            <li>
+              Tell approved drivers to sign in with their phone number and
+              secure login code.
+            </li>
+            <li>
+              Run one test assignment with each new driver before sending real
+              rider trips.
+            </li>
+          </ul>
+        </div>
 
-      <div class="card">
-        <h2>Trip Assignment Rules</h2>
-        <ul class="ops-list">
-          <li>Only assign drivers to trips with payment status PAID or Pay on Dropoff trips.</li>
-          <li>For prepaid trips, make sure commitment is CONFIRMED before assignment.</li>
-          <li>Assign one driver or courier at a time.</li>
-          <li>Do not reassign completed or cancelled trips.</li>
-        </ul>
-      </div>
+        <div class="card">
+          <h2>Trip Assignment Rules</h2>
+          <ul class="ops-list">
+            <li>
+              Only assign drivers to trips with payment status PAID or Pay on
+              Dropoff trips.
+            </li>
+            <li>
+              For prepaid trips, make sure commitment is CONFIRMED before
+              assignment.
+            </li>
+            <li>Assign one driver or courier at a time.</li>
+            <li>Do not reassign completed or cancelled trips.</li>
+          </ul>
+        </div>
 
-      <div class="card">
-        <h2>Payment & Payout Rules</h2>
-        <ul class="ops-list">
-          <li>Prepaid trips must show PAID before dispatch.</li>
-          <li>Driver earnings are credited after trip completion.</li>
-          <li>Payout requests should be checked against the driver wallet balance.</li>
-          <li>After sending bank transfer to the driver, mark the payout as paid in Admin Payouts.</li>
-        </ul>
-      </div>
+        <div class="card">
+          <h2>Payment & Payout Rules</h2>
+          <ul class="ops-list">
+            <li>Prepaid trips must show PAID before dispatch.</li>
+            <li>Driver earnings are credited after trip completion.</li>
+            <li>
+              Payout requests should be checked against the driver wallet
+              balance.
+            </li>
+            <li>
+              After sending bank transfer to the driver, mark the payout as paid
+              in Admin Payouts.
+            </li>
+          </ul>
+        </div>
 
-      <div class="card">
-        <h2>Rider Support & Cancellation Rules</h2>
-        <ul class="ops-list">
-          <li>If a rider has paid, confirm the trip shows PAID and CONFIRMED before assigning a driver.</li>
-          <li>If payment succeeds but the rider is unsure, ask them to check Trip Status using the same phone number.</li>
-          <li>If a rider wants to cancel before driver assignment, review the trip status before cancelling.</li>
-          <li>If a driver has already started the trip, do not cancel without speaking to both rider and driver.</li>
-          <li>If a trip is cancelled, do not assign a driver to it.</li>
-          <li>Keep all rider communication short, polite, and clear during launch operations.</li>
-        </ul>
-      </div>
+        <div class="card">
+          <h2>Rider Support & Cancellation Rules</h2>
+          <ul class="ops-list">
+            <li>
+              If a rider has paid, confirm the trip shows PAID and CONFIRMED
+              before assigning a driver.
+            </li>
+            <li>
+              If payment succeeds but the rider is unsure, ask them to check
+              Trip Status using the same phone number.
+            </li>
+            <li>
+              If a rider wants to cancel before driver assignment, review the
+              trip status before cancelling.
+            </li>
+            <li>
+              If a driver has already started the trip, do not cancel without
+              speaking to both rider and driver.
+            </li>
+            <li>If a trip is cancelled, do not assign a driver to it.</li>
+            <li>
+              Keep all rider communication short, polite, and clear during
+              launch operations.
+            </li>
+          </ul>
+        </div>
 
-      <div class="card">
-        <h2>Operations Support Contacts</h2>
-        <ul class="ops-list">
-          <li><strong>Primary Operator:</strong> Assign one person to monitor trips, payments, drivers, and payouts during operating hours.</li>
-          <li><strong>Rider Support:</strong> Use one dedicated phone number or WhatsApp line for rider payment, pickup, cancellation, and trip status questions.</li>
-          <li><strong>Driver Support:</strong> Use one dedicated phone number or WhatsApp line for driver login, assigned trip, completion, wallet, and payout issues.</li>
-          <li><strong>Payment Issues:</strong> Confirm payment status in Trip Detail before taking action.</li>
-          <li><strong>Escalation:</strong> For payment disputes, safety issues, or serious trip problems, contact the operations operator before cancelling or reassigning the trip.</li>
-        </ul>
-      </div>
+        <div class="card">
+          <h2>Operations Support Contacts</h2>
+          <ul class="ops-list">
+            <li>
+              <strong>Primary Operator:</strong> Assign one person to monitor
+              trips, payments, drivers, and payouts during operating hours.
+            </li>
+            <li>
+              <strong>Rider Support:</strong> Use one dedicated phone number or
+              WhatsApp line for rider payment, pickup, cancellation, and trip
+              status questions.
+            </li>
+            <li>
+              <strong>Driver Support:</strong> Use one dedicated phone number or
+              WhatsApp line for driver login, assigned trip, completion, wallet,
+              and payout issues.
+            </li>
+            <li>
+              <strong>Payment Issues:</strong> Confirm payment status in Trip
+              Detail before taking action.
+            </li>
+            <li>
+              <strong>Escalation:</strong> For payment disputes, safety issues,
+              or serious trip problems, contact the operations operator before
+              cancelling or reassigning the trip.
+            </li>
+          </ul>
+        </div>
 
-      <div class="card">
-        <h2>Support Notes</h2>
-        <ul class="ops-list">
-          <li>If a rider payment succeeds but status is not updated, check Trip Status again first.</li>
-          <li>If a driver cannot see an assigned trip, confirm the driver phone number is correct.</li>
-          <li>If a trip is cancelled, do not assign a driver.</li>
-          <li>Keep rider and driver communication clear and simple during launch operations.</li>
-        </ul>
-      </div>
-    </main>
-  </div>
+        <div class="card">
+          <h2>Support Notes</h2>
+          <ul class="ops-list">
+            <li>
+              If a rider payment succeeds but status is not updated, check Trip
+              Status again first.
+            </li>
+            <li>
+              If a driver cannot see an assigned trip, confirm the driver phone
+              number is correct.
+            </li>
+            <li>If a trip is cancelled, do not assign a driver.</li>
+            <li>
+              Keep rider and driver communication clear and simple during launch
+              operations.
+            </li>
+          </ul>
+        </div>
+      </main>
+    </div>
 
-  <script src="./admin.js"></script>
-</body>
+    <script src="./admin.js"></script>
+  </body>
 </html>

@@ -3,11 +3,11 @@ const API_BASE = window.location.origin;
 function shouldShowDebugOtp() {
   const host = window.location.hostname;
 
-  return host === "localhost" || host === "127.0.0.1" || host === "::1";
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1';
 }
 
-const ADMIN_TOKEN_KEY = "tangolyft_admin_token";
-const ADMIN_USER_KEY = "tangolyft_admin_user";
+const ADMIN_TOKEN_KEY = 'tangolyft_admin_token';
+const ADMIN_USER_KEY = 'tangolyft_admin_user';
 
 let allTrips = [];
 let tripsAutoRefreshTimer = null;
@@ -19,36 +19,36 @@ function $(id) {
   return document.getElementById(id);
 }
 
-function setStatus(message, type = "info") {
-  const status = $("status");
+function setStatus(message, type = 'info') {
+  const status = $('status');
   if (!status) return;
-  status.textContent = message || "";
+  status.textContent = message || '';
   status.className = `status ${type}`;
 }
 
 function getStatusBadge(status) {
-  const s = (status || "-").toUpperCase();
+  const s = (status || '-').toUpperCase();
 
   const base =
-    "display:inline-block;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;";
+    'display:inline-block;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;';
 
-  if (s === "COMPLETED") {
+  if (s === 'COMPLETED') {
     return `<span style="${base}background:#e6f4ea;color:#137333;">Trip Completed</span>`;
   }
 
-  if (s === "CANCELLED") {
+  if (s === 'CANCELLED') {
     return `<span style="${base}background:#fce8e6;color:#c5221f;">Trip Cancelled</span>`;
   }
 
-  if (s === "REQUESTED") {
+  if (s === 'REQUESTED') {
     return `<span style="${base}background:#fef7e0;color:#b06000;">Waiting for Driver</span>`;
   }
 
-  if (s === "ACCEPTED") {
+  if (s === 'ACCEPTED') {
     return `<span style="${base}background:#e8f0fe;color:#174ea6;">Driver Assigned</span>`;
   }
 
-  if (s === "STARTED") {
+  if (s === 'STARTED') {
     return `<span style="${base}background:#e8f0fe;color:#174ea6;">Trip In Progress</span>`;
   }
 
@@ -56,16 +56,16 @@ function getStatusBadge(status) {
 }
 
 function getCommitmentBadge(status) {
-  const s = (status || "-").toUpperCase();
+  const s = (status || '-').toUpperCase();
 
   const base =
-    "display:inline-block;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;";
+    'display:inline-block;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;';
 
-  if (s === "WAIVED") {
+  if (s === 'WAIVED') {
     return `<span style="${base}background:#e6f4ea;color:#137333;">Waived</span>`;
   }
 
-  if (s === "PENDING") {
+  if (s === 'PENDING') {
     return `<span style="${base}background:#fef7e0;color:#b06000;">Pending</span>`;
   }
 
@@ -84,7 +84,7 @@ function startTripsAutoRefresh(intervalMs = 15000) {
       allTrips = trips;
       applyTripFilters();
 
-      const el = $("lastUpdated");
+      const el = $('lastUpdated');
       if (el) {
         el.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
       }
@@ -112,30 +112,30 @@ async function refreshTripDetailSilently() {
   if (tripDetailRefreshInProgress) return;
 
   const token = getAdminToken();
-  const tripId = currentTripDetail?.id || getQueryParam("tripId");
+  const tripId = currentTripDetail?.id || getQueryParam('tripId');
 
   if (!token || !tripId) return;
 
   tripDetailRefreshInProgress = true;
 
   try {
-    const previousStatus = currentTripDetail?.status || "";
+    const previousStatus = currentTripDetail?.status || '';
     const trip = await fetchTripDetail(token, tripId);
 
     renderTripDetail(trip);
 
     if (trip?.status !== previousStatus) {
       setStatus(
-        `Trip status updated: ${trip?.status || "Unknown"}.`,
-        "success",
+        `Trip status updated: ${trip?.status || 'Unknown'}.`,
+        'success',
       );
     }
 
-    if (["COMPLETED", "CANCELLED"].includes(trip?.status || "")) {
+    if (['COMPLETED', 'CANCELLED'].includes(trip?.status || '')) {
       stopTripDetailAutoRefresh();
     }
   } catch (err) {
-    console.error("Failed to auto-refresh trip detail", err);
+    console.error('Failed to auto-refresh trip detail', err);
   } finally {
     tripDetailRefreshInProgress = false;
   }
@@ -155,7 +155,7 @@ function saveAdminSession(token, user) {
 }
 
 function getAdminToken() {
-  return localStorage.getItem(ADMIN_TOKEN_KEY) || "";
+  return localStorage.getItem(ADMIN_TOKEN_KEY) || '';
 }
 
 function clearAdminSession() {
@@ -166,7 +166,7 @@ function clearAdminSession() {
 function requireAdminToken() {
   const token = getAdminToken();
   if (!token) {
-    window.location.href = "./login.html";
+    window.location.href = './login.html';
     return null;
   }
   return token;
@@ -174,35 +174,35 @@ function requireAdminToken() {
 
 function getQueryParam(name) {
   const params = new URLSearchParams(window.location.search);
-  return params.get(name) || "";
+  return params.get(name) || '';
 }
 
 function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function setText(id, value) {
   const el = $(id);
   if (!el) return;
-  el.textContent = value ?? "-";
+  el.textContent = value ?? '-';
 }
 
 async function requestOtp(phone) {
   const res = await fetch(`${API_BASE}/auth/request-otp`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phone }),
   });
 
   const data = await res.json();
 
   if (!res.ok || !data.ok) {
-    throw new Error(data.message || "Failed to request OTP");
+    throw new Error(data.message || 'Failed to request OTP');
   }
 
   return data;
@@ -210,15 +210,15 @@ async function requestOtp(phone) {
 
 async function verifyOtp(phone, otp) {
   const res = await fetch(`${API_BASE}/auth/verify-otp`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phone, otp }),
   });
 
   const data = await res.json();
 
   if (!res.ok || !data.ok) {
-    throw new Error(data.message || "Failed to verify OTP");
+    throw new Error(data.message || 'Failed to verify OTP');
   }
 
   return data;
@@ -226,7 +226,7 @@ async function verifyOtp(phone, otp) {
 
 async function fetchPendingDrivers(token) {
   const res = await fetch(`${API_BASE}/admin/drivers/pending`, {
-    method: "GET",
+    method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -235,7 +235,7 @@ async function fetchPendingDrivers(token) {
   const data = await res.json();
 
   if (!res.ok || !data.ok) {
-    throw new Error(data.message || "Failed to load pending drivers");
+    throw new Error(data.message || 'Failed to load pending drivers');
   }
 
   return data.drivers || [];
@@ -243,7 +243,7 @@ async function fetchPendingDrivers(token) {
 
 async function fetchApprovedDrivers(token) {
   const res = await fetch(`${API_BASE}/admin/drivers/approved`, {
-    method: "GET",
+    method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -252,7 +252,7 @@ async function fetchApprovedDrivers(token) {
   const data = await res.json();
 
   if (!res.ok || !data.ok) {
-    throw new Error(data.message || "Failed to load approved drivers");
+    throw new Error(data.message || 'Failed to load approved drivers');
   }
 
   return data.drivers || [];
@@ -260,7 +260,7 @@ async function fetchApprovedDrivers(token) {
 
 async function fetchTrips(token) {
   const res = await fetch(`${API_BASE}/admin/trips`, {
-    method: "GET",
+    method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -269,7 +269,7 @@ async function fetchTrips(token) {
   const data = await res.json();
 
   if (!res.ok || !data.ok) {
-    throw new Error(data.message || "Failed to load trips");
+    throw new Error(data.message || 'Failed to load trips');
   }
 
   return data.trips || [];
@@ -277,7 +277,7 @@ async function fetchTrips(token) {
 
 async function fetchTripDetail(token, tripId) {
   const res = await fetch(`${API_BASE}/admin/trips/${tripId}`, {
-    method: "GET",
+    method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -286,7 +286,7 @@ async function fetchTripDetail(token, tripId) {
   const data = await res.json();
 
   if (!res.ok || !data.ok) {
-    throw new Error(data.message || "Failed to load trip detail");
+    throw new Error(data.message || 'Failed to load trip detail');
   }
 
   return data.trip;
@@ -294,7 +294,7 @@ async function fetchTripDetail(token, tripId) {
 
 async function fetchNearbyDrivers(token, tripId) {
   const res = await fetch(`${API_BASE}/admin/trips/${tripId}/nearby-drivers`, {
-    method: "GET",
+    method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -303,7 +303,7 @@ async function fetchNearbyDrivers(token, tripId) {
   const data = await res.json();
 
   if (!res.ok || !data.ok) {
-    throw new Error(data.message || "Failed to load nearby drivers");
+    throw new Error(data.message || 'Failed to load nearby drivers');
   }
 
   return data.nearbyDrivers || [];
@@ -311,7 +311,7 @@ async function fetchNearbyDrivers(token, tripId) {
 
 async function approveDriver(token, driverId) {
   const res = await fetch(`${API_BASE}/admin/drivers/${driverId}/approve`, {
-    method: "POST",
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -320,19 +320,19 @@ async function approveDriver(token, driverId) {
   const data = await res.json();
 
   if (!res.ok || !data.ok) {
-    throw new Error(data.message || "Failed to approve driver");
+    throw new Error(data.message || 'Failed to approve driver');
   }
 
   return data;
 }
 
 async function rejectDriver(token, driverId) {
-  const note = window.prompt("Optional rejection note:", "") || "";
+  const note = window.prompt('Optional rejection note:', '') || '';
 
   const res = await fetch(`${API_BASE}/admin/drivers/${driverId}/reject`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ note }),
@@ -341,7 +341,7 @@ async function rejectDriver(token, driverId) {
   const data = await res.json();
 
   if (!res.ok || !data.ok) {
-    throw new Error(data.message || "Failed to reject driver");
+    throw new Error(data.message || 'Failed to reject driver');
   }
 
   return data;
@@ -349,13 +349,13 @@ async function rejectDriver(token, driverId) {
 
 async function suspendDriver(token, driverId) {
   const note =
-    window.prompt("Suspension note:", "Suspended by admin") ||
-    "Suspended by admin";
+    window.prompt('Suspension note:', 'Suspended by admin') ||
+    'Suspended by admin';
 
   const res = await fetch(`${API_BASE}/admin/drivers/${driverId}/suspend`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ note }),
@@ -364,7 +364,7 @@ async function suspendDriver(token, driverId) {
   const data = await res.json();
 
   if (!res.ok || !data.ok) {
-    throw new Error(data.message || "Failed to suspend driver");
+    throw new Error(data.message || 'Failed to suspend driver');
   }
 
   return data;
@@ -372,7 +372,7 @@ async function suspendDriver(token, driverId) {
 
 async function unsuspendDriver(token, driverId) {
   const res = await fetch(`${API_BASE}/admin/drivers/${driverId}/unsuspend`, {
-    method: "POST",
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -381,7 +381,7 @@ async function unsuspendDriver(token, driverId) {
   const data = await res.json();
 
   if (!res.ok || !data.ok) {
-    throw new Error(data.message || "Failed to unsuspend driver");
+    throw new Error(data.message || 'Failed to unsuspend driver');
   }
 
   return data;
@@ -389,14 +389,14 @@ async function unsuspendDriver(token, driverId) {
 
 async function waiveCommitment(token, tripId) {
   const reason =
-    window.prompt("Waiver reason:", "Waived by admin") || "Waived by admin";
+    window.prompt('Waiver reason:', 'Waived by admin') || 'Waived by admin';
 
   const res = await fetch(
     `${API_BASE}/admin/trips/${tripId}/waive-commitment`,
     {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ reason }),
@@ -406,7 +406,7 @@ async function waiveCommitment(token, tripId) {
   const data = await res.json();
 
   if (!res.ok || !data.ok) {
-    throw new Error(data.message || "Failed to waive commitment");
+    throw new Error(data.message || 'Failed to waive commitment');
   }
 
   return data;
@@ -414,13 +414,13 @@ async function waiveCommitment(token, tripId) {
 
 async function cancelTrip(token, tripId) {
   const reason =
-    window.prompt("Cancel reason:", "Cancelled by admin") ||
-    "Cancelled by admin";
+    window.prompt('Cancel reason:', 'Cancelled by admin') ||
+    'Cancelled by admin';
 
   const res = await fetch(`${API_BASE}/admin/trips/${tripId}/cancel`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ reason }),
@@ -429,102 +429,102 @@ async function cancelTrip(token, tripId) {
   const data = await res.json();
 
   if (!res.ok || !data.ok) {
-    throw new Error(data.message || "Failed to cancel trip");
+    throw new Error(data.message || 'Failed to cancel trip');
   }
 
   return data;
 }
 
 function getDriverId(driver) {
-  return driver?.id || driver?.driverId || driver?.driver?.id || "-";
+  return driver?.id || driver?.driverId || driver?.driver?.id || '-';
 }
 
 function getDriverPhone(driver) {
-  return driver?.user?.phone || driver?.phone || "-";
+  return driver?.user?.phone || driver?.phone || '-';
 }
 
 function getDriverCity(driver) {
-  return driver?.city || driver?.driver?.city || "-";
+  return driver?.city || driver?.driver?.city || '-';
 }
 
 function getDriverType(driver) {
-  return driver?.driverType || driver?.driver?.driverType || "-";
+  return driver?.driverType || driver?.driver?.driverType || '-';
 }
 
 function getDriverKyc(driver) {
-  return driver?.kycStatus || driver?.driver?.kycStatus || "-";
+  return driver?.kycStatus || driver?.driver?.kycStatus || '-';
 }
 
 function getDriverAvailability(driver) {
-  return driver?.availability || driver?.driver?.availability || "-";
+  return driver?.availability || driver?.driver?.availability || '-';
 }
 
 function getTripRiderPhone(trip) {
-  return trip?.rider?.phone || "-";
+  return trip?.rider?.phone || '-';
 }
 
 function getTripDriverLabel(trip) {
-  if (!trip?.driver) return "Unassigned";
-  return trip?.driver?.user?.phone || trip?.driver?.id || "Assigned";
+  if (!trip?.driver) return 'Unassigned';
+  return trip?.driver?.user?.phone || trip?.driver?.id || 'Assigned';
 }
 
 function formatDateTime(value) {
-  if (!value) return "-";
+  if (!value) return '-';
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
   return d.toLocaleString();
 }
 
 function getTripCommitmentStatus(trip) {
-  return trip?.commitmentStatus || "PENDING";
+  return trip?.commitmentStatus || 'PENDING';
 }
 
 function isActiveTrip(trip) {
-  return ["REQUESTED", "ACCEPTED", "STARTED"].includes(trip?.status || "");
+  return ['REQUESTED', 'ACCEPTED', 'STARTED'].includes(trip?.status || '');
 }
 
 function sortTrips(trips, sortValue) {
   const items = [...trips];
 
-  if (sortValue === "requested_asc") {
+  if (sortValue === 'requested_asc') {
     items.sort((a, b) => {
       const av = new Date(a?.requestedAt || 0).getTime();
       const bv = new Date(b?.requestedAt || 0).getTime();
       return av - bv;
     });
-  } else if (sortValue === "requested_desc") {
+  } else if (sortValue === 'requested_desc') {
     items.sort((a, b) => {
       const av = new Date(a?.requestedAt || 0).getTime();
       const bv = new Date(b?.requestedAt || 0).getTime();
       return bv - av;
     });
-  } else if (sortValue === "status_asc") {
+  } else if (sortValue === 'status_asc') {
     items.sort((a, b) =>
-      String(a?.status || "").localeCompare(String(b?.status || "")),
+      String(a?.status || '').localeCompare(String(b?.status || '')),
     );
-  } else if (sortValue === "status_desc") {
+  } else if (sortValue === 'status_desc') {
     items.sort((a, b) =>
-      String(b?.status || "").localeCompare(String(a?.status || "")),
+      String(b?.status || '').localeCompare(String(a?.status || '')),
     );
-  } else if (sortValue === "commitment_asc") {
+  } else if (sortValue === 'commitment_asc') {
     items.sort((a, b) =>
       String(getTripCommitmentStatus(a)).localeCompare(
         String(getTripCommitmentStatus(b)),
       ),
     );
-  } else if (sortValue === "commitment_desc") {
+  } else if (sortValue === 'commitment_desc') {
     items.sort((a, b) =>
       String(getTripCommitmentStatus(b)).localeCompare(
         String(getTripCommitmentStatus(a)),
       ),
     );
-  } else if (sortValue === "city_asc") {
+  } else if (sortValue === 'city_asc') {
     items.sort((a, b) =>
-      String(a?.city || "").localeCompare(String(b?.city || "")),
+      String(a?.city || '').localeCompare(String(b?.city || '')),
     );
-  } else if (sortValue === "city_desc") {
+  } else if (sortValue === 'city_desc') {
     items.sort((a, b) =>
-      String(b?.city || "").localeCompare(String(a?.city || "")),
+      String(b?.city || '').localeCompare(String(a?.city || '')),
     );
   }
 
@@ -533,9 +533,9 @@ function sortTrips(trips, sortValue) {
 
 async function assignDriverToTrip(token, tripId, driverName) {
   const res = await fetch(`${API_BASE}/admin/trips/${tripId}/assign-driver`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ driverName }),
@@ -544,7 +544,7 @@ async function assignDriverToTrip(token, tripId, driverName) {
   const data = await res.json();
 
   if (!res.ok || !data.ok) {
-    throw new Error(data.message || "Failed to assign driver");
+    throw new Error(data.message || 'Failed to assign driver');
   }
 
   return data;
@@ -552,7 +552,7 @@ async function assignDriverToTrip(token, tripId, driverName) {
 
 async function startTrip(token, tripId) {
   const res = await fetch(`${API_BASE}/admin/trips/${tripId}/start`, {
-    method: "POST",
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -561,7 +561,7 @@ async function startTrip(token, tripId) {
   const data = await res.json();
 
   if (!res.ok || !data.ok) {
-    throw new Error(data.message || "Failed to start trip");
+    throw new Error(data.message || 'Failed to start trip');
   }
 
   return data;
@@ -569,7 +569,7 @@ async function startTrip(token, tripId) {
 
 async function completeTrip(token, tripId) {
   const res = await fetch(`${API_BASE}/admin/trips/${tripId}/complete`, {
-    method: "POST",
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -578,7 +578,7 @@ async function completeTrip(token, tripId) {
   const data = await res.json();
 
   if (!res.ok || !data.ok) {
-    throw new Error(data.message || "Failed to complete trip");
+    throw new Error(data.message || 'Failed to complete trip');
   }
 
   return data;
@@ -586,45 +586,45 @@ async function completeTrip(token, tripId) {
 
 function renderTripStats(trips) {
   const total = trips.length;
-  const requested = trips.filter((trip) => trip?.status === "REQUESTED").length;
+  const requested = trips.filter((trip) => trip?.status === 'REQUESTED').length;
   const active = trips.filter((trip) => isActiveTrip(trip)).length;
-  const completed = trips.filter((trip) => trip?.status === "COMPLETED").length;
+  const completed = trips.filter((trip) => trip?.status === 'COMPLETED').length;
   const waived = trips.filter(
-    (trip) => getTripCommitmentStatus(trip) === "WAIVED",
+    (trip) => getTripCommitmentStatus(trip) === 'WAIVED',
   ).length;
 
-  setText("statTotalTrips", total);
-  setText("statRequestedTrips", requested);
-  setText("statActiveTrips", active);
-  setText("statCompletedTrips", completed);
-  setText("statWaivedTrips", waived);
+  setText('statTotalTrips', total);
+  setText('statRequestedTrips', requested);
+  setText('statActiveTrips', active);
+  setText('statCompletedTrips', completed);
+  setText('statWaivedTrips', waived);
 }
 
 function applyTripFilters() {
-  const searchInput = $("tripSearch");
-  const statusFilter = $("statusFilter");
-  const commitmentFilter = $("commitmentFilter");
-  const sortFilter = $("sortFilter");
+  const searchInput = $('tripSearch');
+  const statusFilter = $('statusFilter');
+  const commitmentFilter = $('commitmentFilter');
+  const sortFilter = $('sortFilter');
 
-  const search = (searchInput?.value || "").trim().toLowerCase();
-  const status = (statusFilter?.value || "").trim();
-  const commitment = (commitmentFilter?.value || "").trim();
-  const sortValue = (sortFilter?.value || "requested_desc").trim();
+  const search = (searchInput?.value || '').trim().toLowerCase();
+  const status = (statusFilter?.value || '').trim();
+  const commitment = (commitmentFilter?.value || '').trim();
+  const sortValue = (sortFilter?.value || 'requested_desc').trim();
 
   let filtered = [...allTrips];
 
   if (search) {
     filtered = filtered.filter((trip) => {
-      const tripId = String(trip?.id || "").toLowerCase();
-      const riderPhone = String(getTripRiderPhone(trip) || "").toLowerCase();
+      const tripId = String(trip?.id || '').toLowerCase();
+      const riderPhone = String(getTripRiderPhone(trip) || '').toLowerCase();
       return tripId.includes(search) || riderPhone.includes(search);
     });
   }
 
-  if (status === "ACTIVE") {
+  if (status === 'ACTIVE') {
     filtered = filtered.filter((trip) => isActiveTrip(trip));
   } else if (status) {
-    filtered = filtered.filter((trip) => (trip?.status || "") === status);
+    filtered = filtered.filter((trip) => (trip?.status || '') === status);
   }
 
   if (commitment) {
@@ -639,31 +639,31 @@ function applyTripFilters() {
   renderTrips(filtered, false);
   setStatus(
     `Showing ${filtered.length} of ${allTrips.length} trip(s).`,
-    "success",
+    'success',
   );
 }
 
 function updateTripQuickFilterButtons(activeStatus) {
-  document.querySelectorAll(".trip-quick-filter").forEach((btn) => {
-    const isActive = (btn.dataset.status || "") === (activeStatus || "");
-    btn.classList.toggle("active", isActive);
+  document.querySelectorAll('.trip-quick-filter').forEach((btn) => {
+    const isActive = (btn.dataset.status || '') === (activeStatus || '');
+    btn.classList.toggle('active', isActive);
   });
 }
 
 function bindTripQuickFilters() {
-  const statusFilter = $("statusFilter");
-  const commitmentFilter = $("commitmentFilter");
-  const sortFilter = $("sortFilter");
-  const tripSearch = $("tripSearch");
+  const statusFilter = $('statusFilter');
+  const commitmentFilter = $('commitmentFilter');
+  const sortFilter = $('sortFilter');
+  const tripSearch = $('tripSearch');
 
-  document.querySelectorAll(".trip-quick-filter").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const status = btn.dataset.status || "";
+  document.querySelectorAll('.trip-quick-filter').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const status = btn.dataset.status || '';
 
       if (statusFilter) statusFilter.value = status;
-      if (commitmentFilter) commitmentFilter.value = "";
-      if (sortFilter) sortFilter.value = "requested_desc";
-      if (tripSearch) tripSearch.value = "";
+      if (commitmentFilter) commitmentFilter.value = '';
+      if (sortFilter) sortFilter.value = 'requested_desc';
+      if (tripSearch) tripSearch.value = '';
 
       updateTripQuickFilterButtons(status);
       applyTripFilters();
@@ -672,80 +672,80 @@ function bindTripQuickFilters() {
 }
 
 function bindTripFilterControls() {
-  const tripSearch = $("tripSearch");
-  const statusFilter = $("statusFilter");
-  const commitmentFilter = $("commitmentFilter");
-  const sortFilter = $("sortFilter");
-  const clearFiltersBtn = $("clearFiltersBtn");
+  const tripSearch = $('tripSearch');
+  const statusFilter = $('statusFilter');
+  const commitmentFilter = $('commitmentFilter');
+  const sortFilter = $('sortFilter');
+  const clearFiltersBtn = $('clearFiltersBtn');
 
-  tripSearch?.addEventListener("input", applyTripFilters);
-  statusFilter?.addEventListener("change", () => {
-    updateTripQuickFilterButtons(statusFilter.value || "");
+  tripSearch?.addEventListener('input', applyTripFilters);
+  statusFilter?.addEventListener('change', () => {
+    updateTripQuickFilterButtons(statusFilter.value || '');
     applyTripFilters();
   });
-  commitmentFilter?.addEventListener("change", applyTripFilters);
-  sortFilter?.addEventListener("change", applyTripFilters);
+  commitmentFilter?.addEventListener('change', applyTripFilters);
+  sortFilter?.addEventListener('change', applyTripFilters);
 
-  clearFiltersBtn?.addEventListener("click", () => {
-    if (tripSearch) tripSearch.value = "";
-    if (statusFilter) statusFilter.value = "ACTIVE";
-    if (commitmentFilter) commitmentFilter.value = "";
-    if (sortFilter) sortFilter.value = "requested_desc";
-    updateTripQuickFilterButtons("ACTIVE");
+  clearFiltersBtn?.addEventListener('click', () => {
+    if (tripSearch) tripSearch.value = '';
+    if (statusFilter) statusFilter.value = 'ACTIVE';
+    if (commitmentFilter) commitmentFilter.value = '';
+    if (sortFilter) sortFilter.value = 'requested_desc';
+    updateTripQuickFilterButtons('ACTIVE');
     applyTripFilters();
   });
 }
 
 function bindStatCardClicks() {
-  const statusFilter = $("statusFilter");
-  const commitmentFilter = $("commitmentFilter");
+  const statusFilter = $('statusFilter');
+  const commitmentFilter = $('commitmentFilter');
 
-  $("statCardTotal")?.addEventListener("click", () => {
-    if (statusFilter) statusFilter.value = "";
-    if (commitmentFilter) commitmentFilter.value = "";
-    updateTripQuickFilterButtons("");
+  $('statCardTotal')?.addEventListener('click', () => {
+    if (statusFilter) statusFilter.value = '';
+    if (commitmentFilter) commitmentFilter.value = '';
+    updateTripQuickFilterButtons('');
     applyTripFilters();
   });
 
-  $("statCardRequested")?.addEventListener("click", () => {
-    if (statusFilter) statusFilter.value = "REQUESTED";
+  $('statCardRequested')?.addEventListener('click', () => {
+    if (statusFilter) statusFilter.value = 'REQUESTED';
     applyTripFilters();
   });
 
-  $("statCardActive")?.addEventListener("click", () => {
-    if (statusFilter) statusFilter.value = "ACTIVE";
-    updateTripQuickFilterButtons("ACTIVE");
+  $('statCardActive')?.addEventListener('click', () => {
+    if (statusFilter) statusFilter.value = 'ACTIVE';
+    updateTripQuickFilterButtons('ACTIVE');
     applyTripFilters();
   });
 
-  $("statCardCompleted")?.addEventListener("click", () => {
-    if (statusFilter) statusFilter.value = "COMPLETED";
-    updateTripQuickFilterButtons("COMPLETED");
+  $('statCardCompleted')?.addEventListener('click', () => {
+    if (statusFilter) statusFilter.value = 'COMPLETED';
+    updateTripQuickFilterButtons('COMPLETED');
     applyTripFilters();
   });
 
-  $("statCardWaived")?.addEventListener("click", () => {
-    if (commitmentFilter) commitmentFilter.value = "WAIVED";
+  $('statCardWaived')?.addEventListener('click', () => {
+    if (commitmentFilter) commitmentFilter.value = 'WAIVED';
     applyTripFilters();
   });
 }
 
 function renderPendingDrivers(drivers) {
-  const tbody = $("driversTbody");
-  const emptyState = $("emptyState");
+  const tbody = $('driversTbody');
+  const emptyState = $('emptyState');
   if (!tbody || !emptyState) return;
 
-  tbody.innerHTML = "";
+  tbody.innerHTML = '';
 
   if (!drivers.length) {
-    emptyState.style.display = "block";
+    emptyState.style.display = 'block';
     return;
   }
 
-  emptyState.style.display = "none";
+  emptyState.style.display = 'none';
 
   for (const driver of drivers) {
-    const tr = document.createElement("tr");
+    const tr = document.createElement('tr');
     const driverId = getDriverId(driver);
 
     tr.innerHTML = `
@@ -769,24 +769,24 @@ function renderPendingDrivers(drivers) {
 }
 
 function renderApprovedDrivers(drivers) {
-  const tbody = $("driversTbody");
-  const emptyState = $("emptyState");
+  const tbody = $('driversTbody');
+  const emptyState = $('emptyState');
   if (!tbody || !emptyState) return;
 
-  tbody.innerHTML = "";
+  tbody.innerHTML = '';
 
   if (!drivers.length) {
-    emptyState.style.display = "block";
+    emptyState.style.display = 'block';
     return;
   }
 
-  emptyState.style.display = "none";
+  emptyState.style.display = 'none';
 
   for (const driver of drivers) {
-    const tr = document.createElement("tr");
+    const tr = document.createElement('tr');
     const driverId = getDriverId(driver);
     const availability = getDriverAvailability(driver);
-    const isSuspended = availability === "SUSPENDED";
+    const isSuspended = availability === 'SUSPENDED';
 
     tr.innerHTML = `
       <td>${escapeHtml(driverId)}</td>
@@ -813,42 +813,42 @@ function renderApprovedDrivers(drivers) {
 }
 
 function renderTrips(trips, updateMaster = true) {
-  const tbody = $("tripsTbody");
-  const emptyState = $("emptyState");
+  const tbody = $('tripsTbody');
+  const emptyState = $('emptyState');
   if (!tbody || !emptyState) return;
 
   if (updateMaster) {
     allTrips = Array.isArray(trips) ? trips : [];
   }
 
-  tbody.innerHTML = "";
+  tbody.innerHTML = '';
 
   if (!trips.length) {
-    emptyState.style.display = "block";
+    emptyState.style.display = 'block';
     return;
   }
 
-  emptyState.style.display = "none";
+  emptyState.style.display = 'none';
 
   for (const trip of trips) {
-    const tr = document.createElement("tr");
+    const tr = document.createElement('tr');
     const commitmentStatus = getTripCommitmentStatus(trip);
-    const tripId = trip?.id || "";
-    const isWaived = commitmentStatus === "WAIVED";
-    const isCancelled = trip?.status === "CANCELLED";
-    const isCompleted = trip?.status === "COMPLETED";
+    const tripId = trip?.id || '';
+    const isWaived = commitmentStatus === 'WAIVED';
+    const isCancelled = trip?.status === 'CANCELLED';
+    const isCompleted = trip?.status === 'COMPLETED';
 
     tr.innerHTML = `
-      <td>${escapeHtml(tripId || "-")}</td>
+      <td>${escapeHtml(tripId || '-')}</td>
       <td>${escapeHtml(getTripRiderPhone(trip))}</td>
-      <td>${escapeHtml(trip?.city || "-")}</td>
+      <td>${escapeHtml(trip?.city || '-')}</td>
       <td>${escapeHtml(
-  trip?.serviceType === "BIKE_DELIVERY"
-    ? "Bike Delivery"
-    : trip?.serviceType === "CAR_RIDE"
-      ? "Car Ride"
-      : trip?.serviceType || "-"
-)}</td>
+        trip?.serviceType === 'BIKE_DELIVERY'
+          ? 'Bike Delivery'
+          : trip?.serviceType === 'CAR_RIDE'
+            ? 'Car Ride'
+            : trip?.serviceType || '-',
+      )}</td>
       <td>${getStatusBadge(trip?.status)}</td>
       <td>${getCommitmentBadge(commitmentStatus)}</td>
       <td>${escapeHtml(getTripDriverLabel(trip))}</td>
@@ -888,38 +888,38 @@ function renderTrips(trips, updateMaster = true) {
 function bindPendingDriverActionButtons() {
   const token = getAdminToken();
 
-  document.querySelectorAll(".approve-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
+  document.querySelectorAll('.approve-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
       const driverId = btn.dataset.id;
       if (!driverId) return;
 
       try {
         btn.disabled = true;
-        setStatus("Approving driver...", "info");
+        setStatus('Approving driver...', 'info');
         await approveDriver(token, driverId);
-        setStatus("Driver approved successfully.", "success");
+        setStatus('Driver approved successfully.', 'success');
         await loadPendingDrivers();
       } catch (err) {
-        setStatus(err.message || "Failed to approve driver.", "error");
+        setStatus(err.message || 'Failed to approve driver.', 'error');
       } finally {
         btn.disabled = false;
       }
     });
   });
 
-  document.querySelectorAll(".reject-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
+  document.querySelectorAll('.reject-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
       const driverId = btn.dataset.id;
       if (!driverId) return;
 
       try {
         btn.disabled = true;
-        setStatus("Rejecting driver...", "info");
+        setStatus('Rejecting driver...', 'info');
         await rejectDriver(token, driverId);
-        setStatus("Driver rejected successfully.", "success");
+        setStatus('Driver rejected successfully.', 'success');
         await loadPendingDrivers();
       } catch (err) {
-        setStatus(err.message || "Failed to reject driver.", "error");
+        setStatus(err.message || 'Failed to reject driver.', 'error');
       } finally {
         btn.disabled = false;
       }
@@ -930,38 +930,38 @@ function bindPendingDriverActionButtons() {
 function bindApprovedDriverActionButtons() {
   const token = getAdminToken();
 
-  document.querySelectorAll(".suspend-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
+  document.querySelectorAll('.suspend-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
       const driverId = btn.dataset.id;
       if (!driverId) return;
 
       try {
         btn.disabled = true;
-        setStatus("Suspending driver...", "info");
+        setStatus('Suspending driver...', 'info');
         await suspendDriver(token, driverId);
-        setStatus("Driver suspended successfully.", "success");
+        setStatus('Driver suspended successfully.', 'success');
         await loadApprovedDrivers();
       } catch (err) {
-        setStatus(err.message || "Failed to suspend driver.", "error");
+        setStatus(err.message || 'Failed to suspend driver.', 'error');
       } finally {
         btn.disabled = false;
       }
     });
   });
 
-  document.querySelectorAll(".unsuspend-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
+  document.querySelectorAll('.unsuspend-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
       const driverId = btn.dataset.id;
       if (!driverId) return;
 
       try {
         btn.disabled = true;
-        setStatus("Unsuspending driver...", "info");
+        setStatus('Unsuspending driver...', 'info');
         await unsuspendDriver(token, driverId);
-        setStatus("Driver unsuspended successfully.", "success");
+        setStatus('Driver unsuspended successfully.', 'success');
         await loadApprovedDrivers();
       } catch (err) {
-        setStatus(err.message || "Failed to unsuspend driver.", "error");
+        setStatus(err.message || 'Failed to unsuspend driver.', 'error');
       } finally {
         btn.disabled = false;
       }
@@ -972,49 +972,49 @@ function bindApprovedDriverActionButtons() {
 function bindTripActionButtons() {
   const token = getAdminToken();
 
-  document.querySelectorAll(".cancel-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
+  document.querySelectorAll('.cancel-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
       const tripId = btn.dataset.id;
       if (!tripId) return;
 
-      const confirmCancel = confirm("Cancel this trip?");
+      const confirmCancel = confirm('Cancel this trip?');
       if (!confirmCancel) return;
 
       try {
         btn.disabled = true;
-        setStatus("Cancelling trip...", "info");
+        setStatus('Cancelling trip...', 'info');
         await cancelTrip(token, tripId);
-        setStatus("Trip cancelled successfully.", "success");
+        setStatus('Trip cancelled successfully.', 'success');
         await loadTrips();
       } catch (err) {
-        setStatus(err.message || "Failed to cancel trip.", "error");
+        setStatus(err.message || 'Failed to cancel trip.', 'error');
       } finally {
         btn.disabled = false;
       }
     });
   });
 
-  document.querySelectorAll(".waive-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
+  document.querySelectorAll('.waive-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
       const tripId = btn.dataset.id;
       if (!tripId) return;
 
       try {
         btn.disabled = true;
-        setStatus("Waiving commitment...", "info");
+        setStatus('Waiving commitment...', 'info');
         await waiveCommitment(token, tripId);
-        setStatus("Commitment waived successfully.", "success");
+        setStatus('Commitment waived successfully.', 'success');
         await loadTrips();
       } catch (err) {
-        setStatus(err.message || "Failed to waive commitment.", "error");
+        setStatus(err.message || 'Failed to waive commitment.', 'error');
       } finally {
         btn.disabled = false;
       }
     });
   });
 
-  document.querySelectorAll(".view-trip-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
+  document.querySelectorAll('.view-trip-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
       const tripId = btn.dataset.id;
       if (!tripId) return;
       viewTripDetail(tripId);
@@ -1027,30 +1027,30 @@ function viewTripDetail(tripId) {
 }
 
 function formatDistanceKm(distanceKm) {
-  if (distanceKm === null || distanceKm === undefined) return "-";
+  if (distanceKm === null || distanceKm === undefined) return '-';
   const n = Number(distanceKm);
-  if (!Number.isFinite(n)) return "-";
+  if (!Number.isFinite(n)) return '-';
   return `${n.toFixed(n < 10 ? 1 : 0)} km`;
 }
 
 function formatLastSeen(lastSeenAt, ageMs) {
-  if (!lastSeenAt) return "No GPS yet";
+  if (!lastSeenAt) return 'No GPS yet';
 
   if (ageMs !== null && ageMs !== undefined) {
     const mins = Math.round(Number(ageMs) / 60000);
 
-    if (mins <= 1) return "Just now";
+    if (mins <= 1) return 'Just now';
     if (mins < 60) return `${mins} min ago`;
 
     const hours = Math.round(mins / 60);
-    return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+    return `${hours} hour${hours === 1 ? '' : 's'} ago`;
   }
 
   return formatDateTime(lastSeenAt);
 }
 
 function renderNearbyDrivers(drivers) {
-  const card = $("nearbyDriversCard");
+  const card = $('nearbyDriversCard');
   if (!card) return;
 
   if (!drivers || !drivers.length) {
@@ -1066,16 +1066,16 @@ function renderNearbyDrivers(drivers) {
     <div class="nearby-driver-list">
       ${drivers
         .map((driver, index) => {
-          const phone = driver.phone || "";
-          const name = driver.fullName || "Driver";
-          const freshLabel = driver.isFresh ? "Fresh GPS" : "Old GPS";
+          const phone = driver.phone || '';
+          const name = driver.fullName || 'Driver';
+          const freshLabel = driver.isFresh ? 'Fresh GPS' : 'Old GPS';
 
           return `
             <div class="nearby-driver-card">
               <div>
                 <strong>#${index + 1} ${escapeHtml(name)}</strong>
-                <div>${escapeHtml(phone || "-")}</div>
-                <div>${escapeHtml(driver.driverType || "-")} · ${escapeHtml(formatDistanceKm(driver.distanceKm))}</div>
+                <div>${escapeHtml(phone || '-')}</div>
+                <div>${escapeHtml(driver.driverType || '-')} · ${escapeHtml(formatDistanceKm(driver.distanceKm))}</div>
                 <div>${escapeHtml(freshLabel)} · ${escapeHtml(formatLastSeen(driver.lastSeenAt, driver.ageMs))}</div>
               </div>
 
@@ -1088,21 +1088,21 @@ function renderNearbyDrivers(drivers) {
             </div>
           `;
         })
-        .join("")}
+        .join('')}
     </div>
   `;
 
-  document.querySelectorAll(".use-nearby-driver-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const phone = btn.getAttribute("data-phone") || "";
-      const input = $("assignDriverInput");
+  document.querySelectorAll('.use-nearby-driver-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const phone = btn.getAttribute('data-phone') || '';
+      const input = $('assignDriverInput');
 
       if (input) {
         input.value = phone;
         input.focus();
       }
 
-      setStatus("Driver phone filled. Click Assign Driver to confirm.", "info");
+      setStatus('Driver phone filled. Click Assign Driver to confirm.', 'info');
     });
   });
 }
@@ -1112,15 +1112,15 @@ async function loadNearbyDriversForCurrentTrip() {
     const token = requireAdminToken();
     if (!token) return;
 
-    const tripId = currentTripDetail?.id || getQueryParam("tripId");
+    const tripId = currentTripDetail?.id || getQueryParam('tripId');
 
     if (!tripId) {
-      throw new Error("Missing tripId");
+      throw new Error('Missing tripId');
     }
 
-    const card = $("nearbyDriversCard");
+    const card = $('nearbyDriversCard');
     if (card) {
-      card.innerHTML = "Loading nearby drivers...";
+      card.innerHTML = 'Loading nearby drivers...';
     }
 
     const drivers = await fetchNearbyDrivers(token, tripId);
@@ -1128,11 +1128,11 @@ async function loadNearbyDriversForCurrentTrip() {
   } catch (err) {
     console.error(err);
 
-    const card = $("nearbyDriversCard");
+    const card = $('nearbyDriversCard');
     if (card) {
       card.innerHTML = `
         <div class="empty-note error">
-          ${escapeHtml(err.message || "Failed to load nearby drivers.")}
+          ${escapeHtml(err.message || 'Failed to load nearby drivers.')}
         </div>
       `;
     }
@@ -1142,102 +1142,100 @@ async function loadNearbyDriversForCurrentTrip() {
 function renderTripDetail(trip) {
   currentTripDetail = trip;
 
-  setText("tripId", trip?.id || "-");
-  setText("riderPhone", trip?.rider?.phone || "-");
-  setText("driverLabel", getTripDriverLabel(trip));
-  setText("city", trip?.city || "-");
+  setText('tripId', trip?.id || '-');
+  setText('riderPhone', trip?.rider?.phone || '-');
+  setText('driverLabel', getTripDriverLabel(trip));
+  setText('city', trip?.city || '-');
   setText(
-  "serviceType",
-  trip?.serviceType === "BIKE_DELIVERY"
-    ? "Bike Delivery"
-    : trip?.serviceType === "CAR_RIDE"
-      ? "Car Ride"
-      : trip?.serviceType || "-",
-);
-  $("statusValue").innerHTML = getStatusBadge(trip?.status);
-  $("commitmentStatus").innerHTML = getCommitmentBadge(trip?.commitmentStatus);
+    'serviceType',
+    trip?.serviceType === 'BIKE_DELIVERY'
+      ? 'Bike Delivery'
+      : trip?.serviceType === 'CAR_RIDE'
+        ? 'Car Ride'
+        : trip?.serviceType || '-',
+  );
+  $('statusValue').innerHTML = getStatusBadge(trip?.status);
+  $('commitmentStatus').innerHTML = getCommitmentBadge(trip?.commitmentStatus);
 
   setText(
-    "commitmentReason",
-    getTripCommitmentStatus(trip) === "WAIVED"
-      ? trip?.commitmentReason || "Waived by admin"
-      : "Not waived",
+    'commitmentReason',
+    getTripCommitmentStatus(trip) === 'WAIVED'
+      ? trip?.commitmentReason || 'Waived by admin'
+      : 'Not waived',
   );
 
-  setText("pickupLat", trip?.pickupLat ?? "-");
-  setText("pickupLng", trip?.pickupLng ?? "-");
-  setText("dropoffLat", trip?.dropoffLat ?? trip?.delivery?.dropoffLat ?? "-");
-  setText("dropoffLng", trip?.dropoffLng ?? trip?.delivery?.dropoffLng ?? "-");
+  setText('pickupLat', trip?.pickupLat ?? '-');
+  setText('pickupLng', trip?.pickupLng ?? '-');
+  setText('dropoffLat', trip?.dropoffLat ?? trip?.delivery?.dropoffLat ?? '-');
+  setText('dropoffLng', trip?.dropoffLng ?? trip?.delivery?.dropoffLng ?? '-');
   setText(
-  "fareAmount",
-  trip?.fare?.totalAmount ??
-    trip?.fare?.total ??
-    trip?.fare?.amount ??
-    "-",
-);
+    'fareAmount',
+    trip?.fare?.totalAmount ?? trip?.fare?.total ?? trip?.fare?.amount ?? '-',
+  );
 
-setText("itemDescription", trip?.delivery?.itemDescription || "-");
-setText("recipientName", trip?.delivery?.recipientName || "-");
-setText("recipientPhone", trip?.delivery?.recipientPhone || "-");
-setText("noteToCourier", trip?.delivery?.noteToCourier || "-");
-  setText("requestedAt", formatDateTime(trip?.requestedAt));
-  setText("acceptedAt", formatDateTime(trip?.acceptedAt));
-  setText("startedAt", formatDateTime(trip?.startedAt));
-  setText("completedAt", formatDateTime(trip?.completedAt));
-  setText("cancelledAt", formatDateTime(trip?.cancelledAt));
-  setText("commitmentWaivedAt", formatDateTime(trip?.commitmentWaivedAt));
-  setText("waivedBy", trip?.commitmentWaivedBy || "-");
+  setText('itemDescription', trip?.delivery?.itemDescription || '-');
+  setText('recipientName', trip?.delivery?.recipientName || '-');
+  setText('recipientPhone', trip?.delivery?.recipientPhone || '-');
+  setText('noteToCourier', trip?.delivery?.noteToCourier || '-');
+  setText('requestedAt', formatDateTime(trip?.requestedAt));
+  setText('acceptedAt', formatDateTime(trip?.acceptedAt));
+  setText('startedAt', formatDateTime(trip?.startedAt));
+  setText('completedAt', formatDateTime(trip?.completedAt));
+  setText('cancelledAt', formatDateTime(trip?.cancelledAt));
+  setText('commitmentWaivedAt', formatDateTime(trip?.commitmentWaivedAt));
+  setText('waivedBy', trip?.commitmentWaivedBy || '-');
 
-  const waiveBtn = $("waiveTripBtn");
+  const waiveBtn = $('waiveTripBtn');
   if (waiveBtn) {
-    const isWaived = getTripCommitmentStatus(trip) === "WAIVED";
-    const isCancelled = trip?.status === "CANCELLED";
-    const isCompleted = trip?.status === "COMPLETED";
+    const isWaived = getTripCommitmentStatus(trip) === 'WAIVED';
+    const isCancelled = trip?.status === 'CANCELLED';
+    const isCompleted = trip?.status === 'COMPLETED';
 
     if (isCompleted) {
       waiveBtn.disabled = true;
-      waiveBtn.textContent = "Finalized";
-      waiveBtn.classList.remove("success");
+      waiveBtn.textContent = 'Finalized';
+      waiveBtn.classList.remove('success');
     } else if (isCancelled) {
       waiveBtn.disabled = true;
-      waiveBtn.textContent = "Finalized";
-      waiveBtn.classList.remove("success");
+      waiveBtn.textContent = 'Finalized';
+      waiveBtn.classList.remove('success');
     } else if (isWaived) {
       waiveBtn.disabled = true;
-      waiveBtn.textContent = "Waived";
-      waiveBtn.classList.remove("success");
+      waiveBtn.textContent = 'Waived';
+      waiveBtn.classList.remove('success');
     } else {
       waiveBtn.disabled = false;
-      waiveBtn.textContent = "Waive Commitment";
-      waiveBtn.classList.add("success");
+      waiveBtn.textContent = 'Waive Commitment';
+      waiveBtn.classList.add('success');
     }
   }
 
-  const assignDriverRow = $("assignDriverRow");
+  const assignDriverRow = $('assignDriverRow');
   if (assignDriverRow) {
-    const isCancelled = trip?.status === "CANCELLED";
-    const isCompleted = trip?.status === "COMPLETED";
+    const isCancelled = trip?.status === 'CANCELLED';
+    const isCompleted = trip?.status === 'COMPLETED';
 
-    assignDriverRow.style.display = isCompleted || isCancelled ? "none" : "flex";
+    assignDriverRow.style.display =
+      isCompleted || isCancelled ? 'none' : 'flex';
   }
 
-  const cancelBtn = $("cancelTripBtn");
+  const cancelBtn = $('cancelTripBtn');
   if (cancelBtn) {
-    const isCancelled = trip?.status === "CANCELLED";
-    const isCompleted = trip?.status === "COMPLETED";
+    const isCancelled = trip?.status === 'CANCELLED';
+    const isCompleted = trip?.status === 'COMPLETED';
 
     if (isCompleted) {
       cancelBtn.disabled = true;
-      cancelBtn.textContent = "Trip Completed";
-      cancelBtn.classList.remove("danger");
+      cancelBtn.textContent = 'Trip Completed';
+      cancelBtn.classList.remove('danger');
     } else if (isCancelled) {
       cancelBtn.disabled = true;
-      cancelBtn.textContent = "Trip Cancelled";
-      cancelBtn.classList.remove("danger");
+      cancelBtn.textContent = 'Trip Cancelled';
+      cancelBtn.classList.remove('danger');
     } else {
       cancelBtn.disabled = false;
-      cancelBtn.textContent = "Cancel Trip";
-      cancelBtn.classList.add("danger");
+      cancelBtn.textContent = 'Cancel Trip';
+      cancelBtn.classList.add('danger');
     }
   }
 }
@@ -1247,17 +1245,17 @@ async function handleTripDetailWaive() {
     const token = requireAdminToken();
     if (!token) return;
 
-    const tripId = currentTripDetail?.id || getQueryParam("tripId");
+    const tripId = currentTripDetail?.id || getQueryParam('tripId');
     if (!tripId) {
-      throw new Error("Missing tripId");
+      throw new Error('Missing tripId');
     }
 
-    setStatus("Waiving commitment...", "info");
+    setStatus('Waiving commitment...', 'info');
     await waiveCommitment(token, tripId);
-    setStatus("Commitment waived successfully.", "success");
+    setStatus('Commitment waived successfully.', 'success');
     await loadTripDetailPage();
   } catch (err) {
-    setStatus(err.message || "Failed to waive commitment.", "error");
+    setStatus(err.message || 'Failed to waive commitment.', 'error');
   }
 }
 
@@ -1266,20 +1264,20 @@ async function handleTripDetailCancel() {
     const token = requireAdminToken();
     if (!token) return;
 
-    const tripId = currentTripDetail?.id || getQueryParam("tripId");
+    const tripId = currentTripDetail?.id || getQueryParam('tripId');
     if (!tripId) {
-      throw new Error("Missing tripId");
+      throw new Error('Missing tripId');
     }
 
-    const confirmCancel = confirm("Cancel this trip?");
+    const confirmCancel = confirm('Cancel this trip?');
     if (!confirmCancel) return;
 
-    setStatus("Cancelling trip...", "info");
+    setStatus('Cancelling trip...', 'info');
     await cancelTrip(token, tripId);
-    setStatus("Trip cancelled successfully.", "success");
+    setStatus('Trip cancelled successfully.', 'success');
     await loadTripDetailPage();
   } catch (err) {
-    setStatus(err.message || "Failed to cancel trip.", "error");
+    setStatus(err.message || 'Failed to cancel trip.', 'error');
   }
 }
 
@@ -1288,21 +1286,21 @@ async function handleAssignDriver() {
     const token = requireAdminToken();
     if (!token) return;
 
-    const tripId = currentTripDetail?.id || getQueryParam("tripId");
-    const input = $("assignDriverInput");
+    const tripId = currentTripDetail?.id || getQueryParam('tripId');
+    const input = $('assignDriverInput');
 
     if (!input || !input.value.trim()) {
-      throw new Error("Enter driver phone");
+      throw new Error('Enter driver phone');
     }
 
-    setStatus("Assigning driver...", "info");
+    setStatus('Assigning driver...', 'info');
     await assignDriverToTrip(token, tripId, input.value.trim());
-    setStatus("Driver assigned successfully.", "success");
+    setStatus('Driver assigned successfully.', 'success');
 
-    input.value = "";
+    input.value = '';
     await loadTripDetailPage();
   } catch (err) {
-    setStatus(err.message || "Failed to assign driver.", "error");
+    setStatus(err.message || 'Failed to assign driver.', 'error');
   }
 }
 
@@ -1311,14 +1309,14 @@ async function handleStartTrip() {
     const token = requireAdminToken();
     if (!token) return;
 
-    const tripId = currentTripDetail?.id || getQueryParam("tripId");
+    const tripId = currentTripDetail?.id || getQueryParam('tripId');
 
-    setStatus("Starting trip...", "info");
+    setStatus('Starting trip...', 'info');
     await startTrip(token, tripId);
-    setStatus("Trip started successfully.", "success");
+    setStatus('Trip started successfully.', 'success');
     await loadTripDetailPage();
   } catch (err) {
-    setStatus(err.message || "Failed to start trip.", "error");
+    setStatus(err.message || 'Failed to start trip.', 'error');
   }
 }
 
@@ -1327,14 +1325,14 @@ async function handleCompleteTrip() {
     const token = requireAdminToken();
     if (!token) return;
 
-    const tripId = currentTripDetail?.id || getQueryParam("tripId");
+    const tripId = currentTripDetail?.id || getQueryParam('tripId');
 
-    setStatus("Completing trip...", "info");
+    setStatus('Completing trip...', 'info');
     await completeTrip(token, tripId);
-    setStatus("Trip completed successfully.", "success");
+    setStatus('Trip completed successfully.', 'success');
     await loadTripDetailPage();
   } catch (err) {
-    setStatus(err.message || "Failed to complete trip.", "error");
+    setStatus(err.message || 'Failed to complete trip.', 'error');
   }
 }
 
@@ -1343,13 +1341,13 @@ async function loadPendingDrivers() {
     const token = requireAdminToken();
     if (!token) return;
 
-    setStatus("Loading pending drivers...", "info");
+    setStatus('Loading pending drivers...', 'info');
     const drivers = await fetchPendingDrivers(token);
     renderPendingDrivers(drivers);
-    setStatus(`Loaded ${drivers.length} pending driver(s).`, "success");
+    setStatus(`Loaded ${drivers.length} pending driver(s).`, 'success');
   } catch (err) {
     renderPendingDrivers([]);
-    setStatus(err.message || "Failed to load pending drivers.", "error");
+    setStatus(err.message || 'Failed to load pending drivers.', 'error');
   }
 }
 
@@ -1358,13 +1356,13 @@ async function loadApprovedDrivers() {
     const token = requireAdminToken();
     if (!token) return;
 
-    setStatus("Loading approved drivers...", "info");
+    setStatus('Loading approved drivers...', 'info');
     const drivers = await fetchApprovedDrivers(token);
     renderApprovedDrivers(drivers);
-    setStatus(`Loaded ${drivers.length} approved driver(s).`, "success");
+    setStatus(`Loaded ${drivers.length} approved driver(s).`, 'success');
   } catch (err) {
     renderApprovedDrivers([]);
-    setStatus(err.message || "Failed to load approved drivers.", "error");
+    setStatus(err.message || 'Failed to load approved drivers.', 'error');
   }
 }
 
@@ -1373,14 +1371,14 @@ async function loadTrips() {
     const token = requireAdminToken();
     if (!token) return;
 
-    setStatus("Loading trips...", "info");
+    setStatus('Loading trips...', 'info');
     const trips = await fetchTrips(token);
     allTrips = trips;
     applyTripFilters();
-    setStatus(`Loaded ${trips.length} trip(s).`, "success");
+    setStatus(`Loaded ${trips.length} trip(s).`, 'success');
   } catch (err) {
     renderTrips([]);
-    setStatus(err.message || "Failed to load trips.", "error");
+    setStatus(err.message || 'Failed to load trips.', 'error');
   }
 }
 
@@ -1389,79 +1387,79 @@ async function loadTripDetailPage() {
     const token = requireAdminToken();
     if (!token) return;
 
-    const tripId = getQueryParam("tripId");
+    const tripId = getQueryParam('tripId');
     if (!tripId) {
-      throw new Error("Missing tripId in URL");
+      throw new Error('Missing tripId in URL');
     }
 
-    setStatus("Loading trip detail...", "info");
+    setStatus('Loading trip detail...', 'info');
     const trip = await fetchTripDetail(token, tripId);
     renderTripDetail(trip);
     await loadNearbyDriversForCurrentTrip();
-    setStatus("Trip detail loaded successfully.", "success");
+    setStatus('Trip detail loaded successfully.', 'success');
   } catch (err) {
-    setStatus(err.message || "Failed to load trip detail.", "error");
+    setStatus(err.message || 'Failed to load trip detail.', 'error');
   }
 }
 
 function initLoginPage() {
-  const requestOtpBtn = $("requestOtpBtn");
-  const verifyOtpBtn = $("verifyOtpBtn");
-  const phoneInput = $("phone");
-  const otpInput = $("otp");
+  const requestOtpBtn = $('requestOtpBtn');
+  const verifyOtpBtn = $('verifyOtpBtn');
+  const phoneInput = $('phone');
+  const otpInput = $('otp');
 
-  requestOtpBtn?.addEventListener("click", async () => {
+  requestOtpBtn?.addEventListener('click', async () => {
     const phone = phoneInput.value.trim();
     if (!phone) {
-      setStatus("Enter phone number first.", "error");
+      setStatus('Enter phone number first.', 'error');
       return;
     }
 
     try {
       requestOtpBtn.disabled = true;
-      setStatus("Requesting OTP...", "info");
+      setStatus('Requesting OTP...', 'info');
       const data = await requestOtp(phone);
 
-      let msg = "OTP requested successfully.";
+      let msg = 'OTP requested successfully.';
       if (shouldShowDebugOtp() && data.otp) {
         msg += ` Debug OTP: ${data.otp}`;
       }
 
-      setStatus(msg, "success");
+      setStatus(msg, 'success');
     } catch (err) {
-      setStatus(err.message || "OTP request failed.", "error");
+      setStatus(err.message || 'OTP request failed.', 'error');
     } finally {
       requestOtpBtn.disabled = false;
     }
   });
 
-  verifyOtpBtn?.addEventListener("click", async () => {
+  verifyOtpBtn?.addEventListener('click', async () => {
     const phone = phoneInput.value.trim();
     const otp = otpInput.value.trim();
 
     if (!phone || !otp) {
-      setStatus("Enter phone and OTP.", "error");
+      setStatus('Enter phone and OTP.', 'error');
       return;
     }
 
     try {
       verifyOtpBtn.disabled = true;
-      setStatus("Verifying OTP...", "info");
+      setStatus('Verifying OTP...', 'info');
 
       const data = await verifyOtp(phone, otp);
 
-      if (!data.user || data.user.role !== "ADMIN") {
-        throw new Error("This account is not an ADMIN account.");
+      if (!data.user || data.user.role !== 'ADMIN') {
+        throw new Error('This account is not an ADMIN account.');
       }
 
       saveAdminSession(data.token, data.user);
-      setStatus("Login successful. Redirecting...", "success");
+      setStatus('Login successful. Redirecting...', 'success');
 
       setTimeout(() => {
-        window.location.href = "./pending-drivers.html";
+        window.location.href = './pending-drivers.html';
       }, 500);
     } catch (err) {
-      setStatus(err.message || "OTP verification failed.", "error");
+      setStatus(err.message || 'OTP verification failed.', 'error');
     } finally {
       verifyOtpBtn.disabled = false;
     }
@@ -1469,18 +1467,18 @@ function initLoginPage() {
 }
 async function loadPayouts() {
   const token = getAdminToken();
-  const payoutsTbody = $("payoutsTbody");
-  const emptyState = $("emptyState");
+  const payoutsTbody = $('payoutsTbody');
+  const emptyState = $('emptyState');
 
   if (!token) {
-    window.location.href = "./login.html";
+    window.location.href = './login.html';
     return;
   }
 
   if (!payoutsTbody) return;
 
   try {
-    setStatus("Loading pending cashout requests...", "info");
+    setStatus('Loading pending cashout requests...', 'info');
 
     const res = await fetch(`${API_BASE}/admin/payouts/pending`, {
       headers: {
@@ -1491,7 +1489,7 @@ async function loadPayouts() {
     const data = await res.json();
 
     if (!res.ok || !data.ok) {
-      throw new Error(data.message || "Failed to load payouts");
+      throw new Error(data.message || 'Failed to load payouts');
     }
 
     const payouts = data.payouts || [];
@@ -1499,36 +1497,39 @@ async function loadPayouts() {
     renderPayouts(payouts);
 
     if (emptyState) {
-      emptyState.style.display = payouts.length ? "none" : "block";
+      emptyState.style.display = payouts.length ? 'none' : 'block';
     }
 
-    setStatus(`Loaded ${payouts.length} pending cashout request(s).`, "success");
+    setStatus(
+      `Loaded ${payouts.length} pending cashout request(s).`,
+      'success',
+    );
   } catch (err) {
     console.error(err);
-    setStatus(err.message || "Failed to load cashout requests.", "error");
+    setStatus(err.message || 'Failed to load cashout requests.', 'error');
   }
 }
 
 function renderPayouts(payouts) {
-  const payoutsTbody = $("payoutsTbody");
+  const payoutsTbody = $('payoutsTbody');
   if (!payoutsTbody) return;
 
-  payoutsTbody.innerHTML = "";
+  payoutsTbody.innerHTML = '';
 
   payouts.forEach((payout) => {
     const driver = payout.driver || {};
     const user = driver.user || {};
     const wallet = driver.wallet || {};
 
-    const tr = document.createElement("tr");
+    const tr = document.createElement('tr');
 
     tr.innerHTML = `
-      <td>${escapeHtml(payout.id || "-")}</td>
-      <td>${escapeHtml(user.phone || "-")}</td>
-      <td>${escapeHtml(user.fullName || "-")}</td>
-      <td>₦${escapeHtml(payout.amount ?? "-")}</td>
-      <td>₦${escapeHtml(wallet.balance ?? "-")}</td>
-      <td>${escapeHtml(payout.status || "-")}</td>
+      <td>${escapeHtml(payout.id || '-')}</td>
+      <td>${escapeHtml(user.phone || '-')}</td>
+      <td>${escapeHtml(user.fullName || '-')}</td>
+      <td>₦${escapeHtml(payout.amount ?? '-')}</td>
+      <td>₦${escapeHtml(wallet.balance ?? '-')}</td>
+      <td>${escapeHtml(payout.status || '-')}</td>
       <td>${escapeHtml(formatDateTime(payout.createdAt))}</td>
       <td>
         <button class="btn success small mark-payout-paid-btn" data-id="${escapeHtml(payout.id)}">
@@ -1544,9 +1545,9 @@ function renderPayouts(payouts) {
 }
 
 function bindPayoutActions() {
-  document.querySelectorAll(".mark-payout-paid-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const payoutId = btn.getAttribute("data-id");
+  document.querySelectorAll('.mark-payout-paid-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const payoutId = btn.getAttribute('data-id');
       if (!payoutId) return;
 
       const confirmed = window.confirm(
@@ -1564,15 +1565,15 @@ async function handleMarkPayoutPaid(payoutId) {
   const token = getAdminToken();
 
   if (!token) {
-    window.location.href = "./login.html";
+    window.location.href = './login.html';
     return;
   }
 
   try {
-    setStatus("Marking payout as paid...", "info");
+    setStatus('Marking payout as paid...', 'info');
 
     const res = await fetch(`${API_BASE}/admin/payouts/${payoutId}/mark-paid`, {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -1581,182 +1582,425 @@ async function handleMarkPayoutPaid(payoutId) {
     const data = await res.json();
 
     if (!res.ok || !data.ok) {
-      throw new Error(data.message || "Failed to mark payout as paid");
+      throw new Error(data.message || 'Failed to mark payout as paid');
     }
 
-    setStatus(data.message || "Payout marked as paid.", "success");
+    setStatus(data.message || 'Payout marked as paid.', 'success');
 
     await loadPayouts();
   } catch (err) {
     console.error(err);
-    setStatus(err.message || "Failed to mark payout as paid.", "error");
+    setStatus(err.message || 'Failed to mark payout as paid.', 'error');
+  }
+}
+async function fetchStaff(token) {
+  const res = await fetch(`${API_BASE}/admin/staff`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.ok) {
+    throw new Error(data.message || 'Failed to load staff');
+  }
+
+  return data.staff || [];
+}
+
+async function createStaffAccount(token, input) {
+  const res = await fetch(`${API_BASE}/admin/staff`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.ok) {
+    throw new Error(data.message || 'Failed to create staff account');
+  }
+
+  return data;
+}
+
+async function suspendStaffAccount(token, userId) {
+  const res = await fetch(`${API_BASE}/admin/staff/${userId}/suspend`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.ok) {
+    throw new Error(data.message || 'Failed to suspend staff account');
+  }
+
+  return data;
+}
+
+async function reactivateStaffAccount(token, userId) {
+  const res = await fetch(`${API_BASE}/admin/staff/${userId}/reactivate`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.ok) {
+    throw new Error(data.message || 'Failed to reactivate staff account');
+  }
+
+  return data;
+}
+
+function formatStaffRole(role) {
+  if (role === 'CUSTOMER_SUPPORT') return 'Customer Support';
+  if (role === 'OPERATIONS') return 'Operations';
+  return role || '-';
+}
+
+function renderStaff(staff) {
+  const tbody = $('staffTbody');
+  const emptyState = $('emptyState');
+
+  if (!tbody || !emptyState) return;
+
+  tbody.innerHTML = '';
+
+  if (!staff.length) {
+    emptyState.style.display = 'block';
+    return;
+  }
+
+  emptyState.style.display = 'none';
+
+  staff.forEach((member) => {
+    const tr = document.createElement('tr');
+    const isSuspended = member.status === 'SUSPENDED';
+
+    tr.innerHTML = `
+      <td>${escapeHtml(member.fullName || '-')}</td>
+      <td>${escapeHtml(member.phone || '-')}</td>
+      <td>${escapeHtml(member.email || '-')}</td>
+      <td>${escapeHtml(formatStaffRole(member.role))}</td>
+      <td>${escapeHtml(member.status || '-')}</td>
+      <td>${escapeHtml(formatDateTime(member.createdAt))}</td>
+      <td>
+        ${
+          isSuspended
+            ? `<button class="btn success small reactivate-staff-btn" data-id="${escapeHtml(member.id)}">Reactivate</button>`
+            : `<button class="btn danger small suspend-staff-btn" data-id="${escapeHtml(member.id)}">Suspend</button>`
+        }
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  bindStaffActionButtons();
+}
+
+async function loadStaff() {
+  const token = requireAdminToken();
+  if (!token) return;
+
+  try {
+    setStatus('Loading staff accounts...', 'info');
+
+    const staff = await fetchStaff(token);
+
+    renderStaff(staff);
+
+    setStatus(`Loaded ${staff.length} staff account(s).`, 'success');
+  } catch (err) {
+    console.error(err);
+    setStatus(err.message || 'Failed to load staff accounts.', 'error');
   }
 }
 
-function initPayoutsPage() {
-  const refreshBtn = $("refreshBtn");
-  const refreshNearbyDriversBtn = $("refreshNearbyDriversBtn");
-  const logoutBtn = $("logoutBtn");
+function bindStaffActionButtons() {
+  const token = getAdminToken();
 
-  refreshBtn?.addEventListener("click", async () => {
+  document.querySelectorAll('.suspend-staff-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const userId = btn.dataset.id;
+      if (!userId) return;
+
+      if (!confirm('Suspend this staff account?')) return;
+
+      try {
+        btn.disabled = true;
+        setStatus('Suspending staff account...', 'info');
+        await suspendStaffAccount(token, userId);
+        setStatus('Staff account suspended successfully.', 'success');
+        await loadStaff();
+      } catch (err) {
+        setStatus(err.message || 'Failed to suspend staff account.', 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+
+  document.querySelectorAll('.reactivate-staff-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const userId = btn.dataset.id;
+      if (!userId) return;
+
+      try {
+        btn.disabled = true;
+        setStatus('Reactivating staff account...', 'info');
+        await reactivateStaffAccount(token, userId);
+        setStatus('Staff account reactivated successfully.', 'success');
+        await loadStaff();
+      } catch (err) {
+        setStatus(
+          err.message || 'Failed to reactivate staff account.',
+          'error',
+        );
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
+function initStaffPage() {
+  const form = $('staffForm');
+  const refreshBtn = $('refreshBtn');
+  const logoutBtn = $('logoutBtn');
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const token = requireAdminToken();
+    if (!token) return;
+
+    const fullName = ($('staffFullName')?.value || '').trim();
+    const phone = ($('staffPhone')?.value || '').trim();
+    const email = ($('staffEmail')?.value || '').trim();
+    const role = ($('staffRole')?.value || '').trim();
+
+    if (!fullName || !phone || !role) {
+      setStatus('Full name, phone number and role are required.', 'error');
+      return;
+    }
+
+    const createBtn = $('createStaffBtn');
+
+    try {
+      if (createBtn) createBtn.disabled = true;
+
+      setStatus('Creating staff account...', 'info');
+
+      await createStaffAccount(token, {
+        fullName,
+        phone,
+        email: email || undefined,
+        role,
+      });
+
+      form.reset();
+
+      setStatus('Staff account created successfully.', 'success');
+
+      await loadStaff();
+    } catch (err) {
+      setStatus(err.message || 'Failed to create staff account.', 'error');
+    } finally {
+      if (createBtn) createBtn.disabled = false;
+    }
+  });
+
+  refreshBtn?.addEventListener('click', async () => {
+    await loadStaff();
+  });
+
+  logoutBtn?.addEventListener('click', () => {
+    clearAdminSession();
+    window.location.href = './login.html';
+  });
+
+  loadStaff();
+}
+function initPayoutsPage() {
+  const refreshBtn = $('refreshBtn');
+  const refreshNearbyDriversBtn = $('refreshNearbyDriversBtn');
+  const logoutBtn = $('logoutBtn');
+
+  refreshBtn?.addEventListener('click', async () => {
     await loadPayouts();
   });
 
-  logoutBtn?.addEventListener("click", () => {
+  logoutBtn?.addEventListener('click', () => {
     clearAdminSession();
-    window.location.href = "./login.html";
+    window.location.href = './login.html';
   });
 
   loadPayouts();
 }
 
 function initPendingDriversPage() {
-  const refreshBtn = $("refreshBtn");
-  const refreshNearbyDriversBtn = $("refreshNearbyDriversBtn");
-  const logoutBtn = $("logoutBtn");
+  const refreshBtn = $('refreshBtn');
+  const refreshNearbyDriversBtn = $('refreshNearbyDriversBtn');
+  const logoutBtn = $('logoutBtn');
 
-  refreshBtn?.addEventListener("click", async () => {
+  refreshBtn?.addEventListener('click', async () => {
     await loadPendingDrivers();
   });
 
-  logoutBtn?.addEventListener("click", () => {
+  logoutBtn?.addEventListener('click', () => {
     clearAdminSession();
-    window.location.href = "./login.html";
+    window.location.href = './login.html';
   });
 
   loadPendingDrivers();
 }
 
 function initApprovedDriversPage() {
-  const refreshBtn = $("refreshBtn");
-  const refreshNearbyDriversBtn = $("refreshNearbyDriversBtn");
-  const logoutBtn = $("logoutBtn");
+  const refreshBtn = $('refreshBtn');
+  const refreshNearbyDriversBtn = $('refreshNearbyDriversBtn');
+  const logoutBtn = $('logoutBtn');
 
-  refreshBtn?.addEventListener("click", async () => {
+  refreshBtn?.addEventListener('click', async () => {
     await loadApprovedDrivers();
   });
 
-  logoutBtn?.addEventListener("click", () => {
+  logoutBtn?.addEventListener('click', () => {
     clearAdminSession();
-    window.location.href = "./login.html";
+    window.location.href = './login.html';
   });
 
   loadApprovedDrivers();
 }
 
 function initTripsPage() {
-  const refreshBtn = $("refreshBtn");
-  const refreshNearbyDriversBtn = $("refreshNearbyDriversBtn");
-  const logoutBtn = $("logoutBtn");
+  const refreshBtn = $('refreshBtn');
+  const refreshNearbyDriversBtn = $('refreshNearbyDriversBtn');
+  const logoutBtn = $('logoutBtn');
 
-  const statusFilter = $("statusFilter");
-  if (statusFilter && !statusFilter.value) statusFilter.value = "ACTIVE";
-  updateTripQuickFilterButtons(statusFilter?.value || "ACTIVE");
+  const statusFilter = $('statusFilter');
+  if (statusFilter && !statusFilter.value) statusFilter.value = 'ACTIVE';
+  updateTripQuickFilterButtons(statusFilter?.value || 'ACTIVE');
 
   bindTripFilterControls();
   bindTripQuickFilters();
   bindStatCardClicks();
 
-  refreshBtn?.addEventListener("click", async () => {
+  refreshBtn?.addEventListener('click', async () => {
     await loadTrips();
   });
 
-  logoutBtn?.addEventListener("click", () => {
+  logoutBtn?.addEventListener('click', () => {
     stopTripsAutoRefresh();
     clearAdminSession();
-    window.location.href = "./login.html";
+    window.location.href = './login.html';
   });
 
   loadTrips().then(() => {
     startTripsAutoRefresh(15000);
   });
 
-  window.addEventListener("beforeunload", stopTripsAutoRefresh);
+  window.addEventListener('beforeunload', stopTripsAutoRefresh);
 }
 
 function initTripDetailPage() {
-  const refreshBtn = $("refreshBtn");
-  const refreshNearbyDriversBtn = $("refreshNearbyDriversBtn");
-  const logoutBtn = $("logoutBtn");
-  const backBtn = $("backBtn");
-  const waiveTripBtn = $("waiveTripBtn");
-  const cancelTripBtn = $("cancelTripBtn");
-  const assignDriverBtn = $("assignDriverBtn");
-  const startTripBtn = $("startTripBtn");
-  const completeTripBtn = $("completeTripBtn");
+  const refreshBtn = $('refreshBtn');
+  const refreshNearbyDriversBtn = $('refreshNearbyDriversBtn');
+  const logoutBtn = $('logoutBtn');
+  const backBtn = $('backBtn');
+  const waiveTripBtn = $('waiveTripBtn');
+  const cancelTripBtn = $('cancelTripBtn');
+  const assignDriverBtn = $('assignDriverBtn');
+  const startTripBtn = $('startTripBtn');
+  const completeTripBtn = $('completeTripBtn');
 
-  refreshBtn?.addEventListener("click", async () => {
+  refreshBtn?.addEventListener('click', async () => {
     await loadTripDetailPage();
   });
 
-  refreshNearbyDriversBtn?.addEventListener("click", async () => {
+  refreshNearbyDriversBtn?.addEventListener('click', async () => {
     await loadNearbyDriversForCurrentTrip();
   });
 
-  logoutBtn?.addEventListener("click", () => {
+  logoutBtn?.addEventListener('click', () => {
     stopTripDetailAutoRefresh();
     clearAdminSession();
-    window.location.href = "./login.html";
+    window.location.href = './login.html';
   });
 
-  backBtn?.addEventListener("click", () => {
+  backBtn?.addEventListener('click', () => {
     stopTripDetailAutoRefresh();
-    window.location.href = "./trips.html";
+    window.location.href = './trips.html';
   });
 
-  waiveTripBtn?.addEventListener("click", async () => {
+  waiveTripBtn?.addEventListener('click', async () => {
     await handleTripDetailWaive();
   });
 
-  cancelTripBtn?.addEventListener("click", async () => {
+  cancelTripBtn?.addEventListener('click', async () => {
     await handleTripDetailCancel();
   });
 
-  assignDriverBtn?.addEventListener("click", async () => {
+  assignDriverBtn?.addEventListener('click', async () => {
     await handleAssignDriver();
   });
 
-  startTripBtn?.addEventListener("click", async () => {
+  startTripBtn?.addEventListener('click', async () => {
     await handleStartTrip();
   });
 
-  completeTripBtn?.addEventListener("click", async () => {
+  completeTripBtn?.addEventListener('click', async () => {
     await handleCompleteTrip();
   });
 
   loadTripDetailPage().then(() => {
-    if (!["COMPLETED", "CANCELLED"].includes(currentTripDetail?.status || "")) {
+    if (!['COMPLETED', 'CANCELLED'].includes(currentTripDetail?.status || '')) {
       startTripDetailAutoRefresh(5000);
     }
   });
 
-  window.addEventListener("beforeunload", stopTripDetailAutoRefresh);
+  window.addEventListener('beforeunload', stopTripDetailAutoRefresh);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener('DOMContentLoaded', () => {
   const page = document.body.dataset.page;
 
-  if (page === "login") {
+  if (page === 'login') {
     initLoginPage();
   }
 
-  if (page === "pending-drivers") {
+  if (page === 'pending-drivers') {
     initPendingDriversPage();
   }
 
-  if (page === "approved-drivers") {
+  if (page === 'approved-drivers') {
     initApprovedDriversPage();
   }
 
-  if (page === "trips") {
+  if (page === 'trips') {
     initTripsPage();
   }
 
-   if (page === "trip-detail") {
+  if (page === 'trip-detail') {
     initTripDetailPage();
   }
 
-  if (page === "payouts") {
+  if (page === 'payouts') {
     initPayoutsPage();
+  }
+
+  if (page === 'staff') {
+    initStaffPage();
   }
 });
